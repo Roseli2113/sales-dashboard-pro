@@ -14,7 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          plan: string
+          plays_limit: number
+          plays_used: number
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          plan?: string
+          plays_limit?: number
+          plays_used?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          plan?: string
+          plays_limit?: number
+          plays_used?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      video_metrics: {
+        Row: {
+          button_clicks: number | null
+          conversion_rate: number | null
+          conversions: number | null
+          created_at: string
+          date: string
+          engagement: number | null
+          id: string
+          pitch_audience: number | null
+          pitch_retention: number | null
+          play_rate: number | null
+          plays: number
+          revenue: number | null
+          unique_plays: number
+          unique_views: number
+          video_id: string
+          views: number
+        }
+        Insert: {
+          button_clicks?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          created_at?: string
+          date?: string
+          engagement?: number | null
+          id?: string
+          pitch_audience?: number | null
+          pitch_retention?: number | null
+          play_rate?: number | null
+          plays?: number
+          revenue?: number | null
+          unique_plays?: number
+          unique_views?: number
+          video_id: string
+          views?: number
+        }
+        Update: {
+          button_clicks?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          created_at?: string
+          date?: string
+          engagement?: number | null
+          id?: string
+          pitch_audience?: number | null
+          pitch_retention?: number | null
+          play_rate?: number | null
+          plays?: number
+          revenue?: number | null
+          unique_plays?: number
+          unique_views?: number
+          video_id?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_metrics_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_url: string | null
+          folder_id: string | null
+          id: string
+          name: string
+          player_version: string
+          status: string
+          thumbnail_url: string | null
+          total_plays: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_url?: string | null
+          folder_id?: string | null
+          id?: string
+          name: string
+          player_version?: string
+          status?: string
+          thumbnail_url?: string | null
+          total_plays?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_url?: string | null
+          folder_id?: string | null
+          id?: string
+          name?: string
+          player_version?: string
+          status?: string
+          thumbnail_url?: string | null
+          total_plays?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

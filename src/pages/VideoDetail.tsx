@@ -115,7 +115,7 @@ export default function VideoDetail() {
           <div className="mt-6 flex justify-center">
             <div className={`rounded-xl bg-foreground/95 flex items-center justify-center ${device === "desktop" ? "w-full aspect-video" : "w-80 aspect-[9/16]"}`}>
               {video?.file_url ? (
-                <video src={video.file_url} controls className="h-full w-full rounded-xl object-contain" />
+                <video ref={videoElRef} src={video.file_url} controls className="h-full w-full rounded-xl object-contain" />
               ) : (
                 <div className="text-center text-primary-foreground/50">
                   <VideoIcon className="mx-auto h-16 w-16" />

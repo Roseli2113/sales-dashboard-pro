@@ -11,10 +11,10 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const sideMenuItems = [
   { label: "Detalhes", icon: VideoIcon, active: true, link: null },
-  { label: "Editar", icon: Pencil, link: null },
+  { label: "Editar", icon: Pencil, link: "edit" },
   { label: "Analytics", icon: BarChart3, link: "analytics" },
   { label: "Download", icon: Download, link: null },
-  { label: "Remover", icon: Trash2, destructive: true, link: null },
+  { label: "Remover", icon: Trash2, destructive: true, link: "__delete__" },
 ];
 
 export default function VideoDetail() {

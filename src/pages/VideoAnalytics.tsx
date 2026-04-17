@@ -35,6 +35,7 @@ export default function VideoAnalytics() {
   const navigate = useNavigate();
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [metrics, setMetrics] = useState<Tables<"video_metrics">[]>([]);
+  const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -43,7 +44,11 @@ export default function VideoAnalytics() {
         supabase.from("videos").select("*").eq("id", id).single(),
         supabase.from("video_metrics").select("*").eq("video_id", id).order("date", { ascending: false }).limit(30),
       ]);
-      if (vRes.data) setVideo(vRes.data);
+      if (vRes.data) {
+        setVideo(vRes.data);
+        const curve = await fetchRetentionCurve(id, vRes.data.duration_seconds ?? 60);
+        setRetentionData(curve);
+      }
       if (mRes.data) setMetrics(mRes.data);
     };
     load();

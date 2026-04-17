@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { fetchRetentionCurve, type RetentionPoint } from "@/lib/retention";
 
 const sideMenu = [
   { label: "Detalhes", icon: VideoIcon, link: "" },
@@ -27,11 +28,6 @@ const sideMenu = [
   { label: "Remover", icon: Trash2, destructive: true },
 ];
 
-const retentionData = Array.from({ length: 33 }, (_, i) => ({
-  time: `${String(Math.floor(i * 0.98)).padStart(2, "0")}:${String(Math.floor((i * 59) % 60)).padStart(2, "0")}`,
-  retention: Math.max(5, 100 - i * 1.8 - Math.random() * 8),
-}));
-
 const tabs = ["Retenção Geral", "Países", "Dispositivos", "Sistema Operacional", "Navegadores", "Origem do Tráfego"];
 
 export default function VideoAnalytics() {
@@ -39,6 +35,7 @@ export default function VideoAnalytics() {
   const navigate = useNavigate();
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [metrics, setMetrics] = useState<Tables<"video_metrics">[]>([]);
+  const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -47,7 +44,11 @@ export default function VideoAnalytics() {
         supabase.from("videos").select("*").eq("id", id).single(),
         supabase.from("video_metrics").select("*").eq("video_id", id).order("date", { ascending: false }).limit(30),
       ]);
-      if (vRes.data) setVideo(vRes.data);
+      if (vRes.data) {
+        setVideo(vRes.data);
+        const curve = await fetchRetentionCurve(id, vRes.data.duration_seconds ?? 60);
+        setRetentionData(curve);
+      }
       if (mRes.data) setMetrics(mRes.data);
     };
     load();
@@ -167,7 +168,9 @@ export default function VideoAnalytics() {
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam.
+              {retentionData.length === 0
+                ? "📊 Sem dados de retenção ainda. Compartilhe o embed do vídeo — assim que alguém assistir, a curva real aparecerá aqui sobreposta ao vídeo."
+                : "📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam."}
             </p>
           </div>
 

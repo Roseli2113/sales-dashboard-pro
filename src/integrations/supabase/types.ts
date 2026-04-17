@@ -139,6 +139,38 @@ export type Database = {
           },
         ]
       }
+      video_watch_events: {
+        Row: {
+          created_at: string
+          id: string
+          second: number
+          session_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          second: number
+          session_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          second?: number
+          session_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_watch_events_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           created_at: string

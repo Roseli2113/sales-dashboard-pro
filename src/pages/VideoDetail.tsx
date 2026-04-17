@@ -38,6 +38,8 @@ export default function VideoDetail() {
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
+  const videoElRef = useRef<HTMLVideoElement>(null);
+  useRetentionTracking(videoElRef, video?.id);
 
   useEffect(() => {
     if (!id) return;

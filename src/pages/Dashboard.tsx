@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Tables } from "@/integrations/supabase/types";
 import { UploadVideoDialog } from "@/components/UploadVideoDialog";
+import { EmbedDialog } from "@/components/EmbedDialog";
 import { deleteVideo } from "@/lib/videos";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Tables<"videos"> | null>(null);
+  const [embedVideo, setEmbedVideo] = useState<Tables<"videos"> | null>(null);
   const { user } = useAuth();
 
   const handleDelete = async () => {
@@ -151,7 +153,9 @@ export default function Dashboard() {
                 <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                   <Link to={`/dashboard/video/${video.id}`}><Eye className="h-3.5 w-3.5 text-muted-foreground" /></Link>
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7"><Code2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEmbedVideo(video)}>
+                  <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -173,6 +177,14 @@ export default function Dashboard() {
         )}
       </div>
       <UploadVideoDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={loadVideos} />
+      {embedVideo && (
+        <EmbedDialog
+          open={!!embedVideo}
+          onOpenChange={(o) => !o && setEmbedVideo(null)}
+          videoId={embedVideo.id}
+          videoUrl={embedVideo.file_url}
+        />
+      )}
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

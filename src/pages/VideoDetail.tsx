@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EmbedDialog } from "@/components/EmbedDialog";
 
 const sideMenuItems = [
   { label: "Detalhes", icon: VideoIcon, active: true, link: null },
@@ -35,6 +36,7 @@ export default function VideoDetail() {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -101,7 +103,7 @@ export default function VideoDetail() {
                   <Smartphone className="h-4 w-4" />
                 </Button>
               </div>
-              <Button className="gradient-hero text-primary-foreground border-0" size="sm">
+              <Button className="gradient-hero text-primary-foreground border-0" size="sm" onClick={() => setEmbedOpen(true)}>
                 <Code2 className="mr-2 h-4 w-4" /> Embed
               </Button>
             </div>
@@ -137,6 +139,14 @@ export default function VideoDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {video && (
+        <EmbedDialog
+          open={embedOpen}
+          onOpenChange={setEmbedOpen}
+          videoId={video.id}
+          videoUrl={video.file_url}
+        />
+      )}
     </DashboardLayout>
   );
 }

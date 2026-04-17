@@ -1,4 +1,4 @@
-import { Video, FlaskConical, BarChart3, Download, Settings, HelpCircle, ChevronLeft } from "lucide-react";
+import { Video, FlaskConical, BarChart3, Settings, HelpCircle, Play } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -6,6 +6,8 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -31,14 +33,30 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="justify-between">
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex h-14 items-center gap-2 px-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gradient-hero">
+            <Play className="h-4 w-4 text-primary-foreground" fill="currentColor" />
+          </div>
+          {!collapsed && (
+            <span className="text-lg font-bold text-foreground">VPlay</span>
+          )}
+        </div>
+      </SidebarHeader>
+      <SidebarContent className="justify-between py-4">
         <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Navegação</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="h-10">
+                    <NavLink
+                      to={item.url}
+                      end
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
@@ -51,11 +69,16 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {bottomItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="h-10">
+                    <NavLink
+                      to={item.url}
+                      end
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>

@@ -9,6 +9,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Tables } from "@/integrations/supabase/types";
 import { UploadVideoDialog } from "@/components/UploadVideoDialog";
+import { deleteVideo } from "@/lib/videos";
+import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
@@ -16,7 +35,21 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Tables<"videos"> | null>(null);
   const { user } = useAuth();
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    try {
+      await deleteVideo(toDelete.id, toDelete.file_url);
+      setVideos((vs) => vs.filter((v) => v.id !== toDelete.id));
+      toast.success("Vídeo removido");
+    } catch {
+      toast.error("Erro ao remover vídeo");
+    } finally {
+      setToDelete(null);
+    }
+  };
 
   const loadVideos = async () => {
     if (!user) return;
@@ -115,15 +148,47 @@ export default function Dashboard() {
               </span>
               <span className="w-20 text-center text-sm text-card-foreground font-medium">{video.total_plays}</span>
               <div className="w-20 flex justify-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7"><Eye className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                  <Link to={`/dashboard/video/${video.id}`}><Eye className="h-3.5 w-3.5 text-muted-foreground" /></Link>
+                </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7"><Code2 className="h-3.5 w-3.5 text-muted-foreground" /></Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5 text-muted-foreground" /></Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setToDelete(video)}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Remover
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))
         )}
       </div>
       <UploadVideoDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={loadVideos} />
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover vídeo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente "{toDelete?.name}" e o arquivo do storage. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

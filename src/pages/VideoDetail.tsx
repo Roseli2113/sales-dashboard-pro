@@ -8,13 +8,25 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { deleteVideo } from "@/lib/videos";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const sideMenuItems = [
   { label: "Detalhes", icon: VideoIcon, active: true, link: null },
-  { label: "Editar", icon: Pencil, link: null },
+  { label: "Editar", icon: Pencil, link: "edit" },
   { label: "Analytics", icon: BarChart3, link: "analytics" },
   { label: "Download", icon: Download, link: null },
-  { label: "Remover", icon: Trash2, destructive: true, link: null },
+  { label: "Remover", icon: Trash2, destructive: true, link: "__delete__" },
 ];
 
 export default function VideoDetail() {
@@ -22,6 +34,7 @@ export default function VideoDetail() {
   const navigate = useNavigate();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -29,6 +42,23 @@ export default function VideoDetail() {
       if (data) setVideo(data);
     });
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!video) return;
+    try {
+      await deleteVideo(video.id, video.file_url);
+      toast.success("Vídeo removido");
+      navigate("/dashboard");
+    } catch (e) {
+      toast.error("Erro ao remover vídeo");
+    }
+  };
+
+  const handleMenuClick = (link: string | null) => {
+    if (!link) return;
+    if (link === "__delete__") setConfirmDelete(true);
+    else navigate(`/dashboard/video/${id}/${link}`);
+  };
 
   return (
     <DashboardLayout>
@@ -41,7 +71,7 @@ export default function VideoDetail() {
             {sideMenuItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => { if (item.link) navigate(`/dashboard/video/${id}/${item.link}`); }}
+                onClick={() => handleMenuClick(item.link)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   item.active ? "bg-sidebar-accent text-primary font-medium"
                     : item.destructive ? "text-destructive hover:bg-destructive/10"
@@ -91,6 +121,22 @@ export default function VideoDetail() {
           </div>
         </div>
       </div>
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover vídeo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente o vídeo "{video?.name}" e seu arquivo. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

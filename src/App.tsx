@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import VideoDetail from "./pages/VideoDetail";
+import VideoEdit from "./pages/VideoEdit";
 import VideoAnalytics from "./pages/VideoAnalytics";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/video/:id/edit" element={<ProtectedRoute><VideoEdit /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id/analytics" element={<ProtectedRoute><VideoAnalytics /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

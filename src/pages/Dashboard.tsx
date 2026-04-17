@@ -8,13 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Tables } from "@/integrations/supabase/types";
+import { UploadVideoDialog } from "@/components/UploadVideoDialog";
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [videos, setVideos] = useState<Tables<"videos">[]>([]);
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const { user } = useAuth();
+
+  const loadVideos = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("videos").select("*").order("created_at", { ascending: false });
+    if (data) setVideos(data);
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +77,7 @@ export default function Dashboard() {
             <Input className="pl-9 w-48" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <Button variant="outline" size="sm"><FolderPlus className="mr-2 h-4 w-4" /> Nova Pasta</Button>
-          <Button size="sm" className="gradient-hero text-primary-foreground border-0"><Upload className="mr-2 h-4 w-4" /> Upload</Button>
+          <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={() => setUploadOpen(true)}><Upload className="mr-2 h-4 w-4" /> Upload</Button>
         </div>
       </div>
 
@@ -115,6 +123,7 @@ export default function Dashboard() {
           ))
         )}
       </div>
+      <UploadVideoDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={loadVideos} />
     </DashboardLayout>
   );
 }

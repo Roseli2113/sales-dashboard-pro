@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import VideoDetail from "./pages/VideoDetail";
 import VideoAnalytics from "./pages/VideoAnalytics";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -25,9 +26,9 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/video/:id" element={<VideoDetail />} />
-            <Route path="/dashboard/video/:id/analytics" element={<VideoAnalytics />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/video/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/video/:id/analytics" element={<ProtectedRoute><VideoAnalytics /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

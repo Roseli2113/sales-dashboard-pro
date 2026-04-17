@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { fetchRetentionCurve, type RetentionPoint } from "@/lib/retention";
 
 const sideMenu = [
   { label: "Detalhes", icon: VideoIcon, link: "" },
@@ -26,11 +27,6 @@ const sideMenu = [
   { label: "Download", icon: Download },
   { label: "Remover", icon: Trash2, destructive: true },
 ];
-
-const retentionData = Array.from({ length: 33 }, (_, i) => ({
-  time: `${String(Math.floor(i * 0.98)).padStart(2, "0")}:${String(Math.floor((i * 59) % 60)).padStart(2, "0")}`,
-  retention: Math.max(5, 100 - i * 1.8 - Math.random() * 8),
-}));
 
 const tabs = ["Retenção Geral", "Países", "Dispositivos", "Sistema Operacional", "Navegadores", "Origem do Tráfego"];
 

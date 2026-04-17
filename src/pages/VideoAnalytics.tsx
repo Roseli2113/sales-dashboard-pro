@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -137,23 +137,38 @@ export default function VideoAnalytics() {
 
           <div className="mt-6 rounded-lg border bg-card p-4">
             <p className="mb-2 text-xs text-muted-foreground text-right">Atualizado agora mesmo</p>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={retentionData}>
-                  <defs>
-                    <linearGradient id="retGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                  <XAxis dataKey="time" tick={{ fontSize: 11 }} stroke="hsl(220, 10%, 46%)" />
-                  <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} stroke="hsl(220, 10%, 46%)" />
-                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, "Retenção"]} contentStyle={{ background: "hsl(0, 0%, 100%)", border: "1px solid hsl(220, 13%, 91%)", borderRadius: "8px", fontSize: "12px" }} />
-                  <Area type="monotone" dataKey="retention" stroke="hsl(142, 71%, 45%)" strokeWidth={2} fill="url(#retGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="relative h-72 overflow-hidden rounded-md bg-foreground/95">
+              {video?.file_url && (
+                <video
+                  src={video.file_url}
+                  controls
+                  className="absolute inset-0 h-full w-full object-contain opacity-60"
+                />
+              )}
+              <div className="pointer-events-none absolute inset-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={retentionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="retGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.6} />
+                        <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--background) / 0.2)" />
+                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.4)" />
+                    <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.4)" />
+                    <Tooltip
+                      formatter={(value: number) => [`${value.toFixed(1)}%`, "Retenção"]}
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                    />
+                    <Area type="monotone" dataKey="retention" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#retGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam.
+            </p>
           </div>
 
           <div className="mt-6">

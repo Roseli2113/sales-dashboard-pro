@@ -22,6 +22,7 @@ export default function VideoDetail() {
   const navigate = useNavigate();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -29,6 +30,23 @@ export default function VideoDetail() {
       if (data) setVideo(data);
     });
   }, [id]);
+
+  const handleDelete = async () => {
+    if (!video) return;
+    try {
+      await deleteVideo(video.id, video.file_url);
+      toast.success("Vídeo removido");
+      navigate("/dashboard");
+    } catch (e) {
+      toast.error("Erro ao remover vídeo");
+    }
+  };
+
+  const handleMenuClick = (link: string | null) => {
+    if (!link) return;
+    if (link === "__delete__") setConfirmDelete(true);
+    else navigate(`/dashboard/video/${id}/${link}`);
+  };
 
   return (
     <DashboardLayout>
@@ -41,7 +59,7 @@ export default function VideoDetail() {
             {sideMenuItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => { if (item.link) navigate(`/dashboard/video/${id}/${item.link}`); }}
+                onClick={() => handleMenuClick(item.link)}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   item.active ? "bg-sidebar-accent text-primary font-medium"
                     : item.destructive ? "text-destructive hover:bg-destructive/10"

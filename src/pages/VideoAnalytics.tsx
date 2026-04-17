@@ -168,7 +168,9 @@ export default function VideoAnalytics() {
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam.
+              {retentionData.length === 0
+                ? "📊 Sem dados de retenção ainda. Compartilhe o embed do vídeo — assim que alguém assistir, a curva real aparecerá aqui sobreposta ao vídeo."
+                : "📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam."}
             </p>
           </div>
 

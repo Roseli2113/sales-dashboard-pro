@@ -1,1 +1,4 @@
 project_id = "nlpjmhxpnrzrtxserysf"
+
+[functions.player-embed]
+verify_jwt = false

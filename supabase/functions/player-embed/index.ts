@@ -48,19 +48,17 @@ Deno.serve(async (req) => {
   var VIDEO_URL = ${safeUrl};
   var VIDEO_ID = ${safeId};
 
-  if (customElements.get("vplay-smartplayer")) {
-    // Already defined — still try to render any existing nodes for this video
-    try {
-      document.querySelectorAll('vplay-smartplayer[id="vid-' + VIDEO_ID + '"]').forEach(function(el){
-        if (!el.__vplayRendered) { el.__vplayRendered = true; renderInto(el); }
-      });
-    } catch(e) {}
-    return;
-  }
+  if (customElements.get("vplay-smartplayer")) return;
 
-  function renderInto(host) {
+  class VPlaySmartPlayer extends HTMLElement {
+    connectedCallback() {
+      // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
+      host.style.display = "block";
+      host.style.width = host.style.width || "100%";
+
       var wrap = document.createElement("div");
-      wrap.style.cssText = "position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:12px;overflow:hidden;";
+      // Use padding-bottom hack for 9:16 aspect ratio (works in Quirks Mode, unlike aspect-ratio CSS)
+      wrap.style.cssText = "position:relative;width:100%;padding-bottom:177.78%;background:#000;border-radius:12px;overflow:hidden;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -68,7 +66,7 @@ Deno.serve(async (req) => {
       video.playsInline = true;
       video.setAttribute("playsinline", "");
       video.preload = "metadata";
-      video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;display:block;";
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;";
 
       wrap.appendChild(video);
       host.innerHTML = "";
@@ -108,32 +106,10 @@ Deno.serve(async (req) => {
         setInterval(flush, 2000);
         window.addEventListener("beforeunload", flush);
       } catch(e) { /* ignore tracking errors */ }
-  }
-
-  class VPlaySmartPlayer extends HTMLElement {
-    connectedCallback() {
-      if (this.__vplayRendered) return;
-      this.__vplayRendered = true;
-      renderInto(this);
     }
   }
 
   customElements.define("vplay-smartplayer", VPlaySmartPlayer);
-
-  // Fallback: also render any matching elements already in the DOM
-  // (covers cases where WordPress/Elementor wraps the script weirdly)
-  function bootstrap() {
-    try {
-      document.querySelectorAll('vplay-smartplayer[id="vid-' + VIDEO_ID + '"]').forEach(function(el){
-        if (!el.__vplayRendered) { el.__vplayRendered = true; renderInto(el); }
-      });
-    } catch(e) {}
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootstrap);
-  } else {
-    bootstrap();
-  }
 })();`;
 
     return new Response(js, {

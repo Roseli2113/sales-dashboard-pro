@@ -12,6 +12,7 @@ import VideoDetail from "./pages/VideoDetail";
 import VideoEdit from "./pages/VideoEdit";
 import VideoAnalytics from "./pages/VideoAnalytics";
 import NotFound from "./pages/NotFound";
+import Embed from "./pages/Embed";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/embed/:id" element={<Embed />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id/edit" element={<ProtectedRoute><VideoEdit /></ProtectedRoute>} />

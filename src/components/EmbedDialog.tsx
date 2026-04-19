@@ -19,12 +19,14 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
 
   const playerId = `vid-${videoId}`;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js`;
   const embedUrl = `${origin}/embed/${videoId}`;
 
   const jsCode = `<vplay-smartplayer id="${playerId}" style="display: block; margin: 0 auto; width: 100%;${responsive ? "" : " max-width: 400px;"}"></vplay-smartplayer>
 <script type="text/javascript">
   var s = document.createElement("script");
-  s.src = "${origin}/players/${videoId}.js";
+  s.src = "${playerScriptUrl}";
   s.async = true;
   document.head.appendChild(s);
 </script>`;

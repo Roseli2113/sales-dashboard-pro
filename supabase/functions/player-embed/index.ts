@@ -66,10 +66,11 @@ Deno.serve(async (req) => {
       video.playsInline = true;
       video.setAttribute("playsinline", "");
       video.preload = "metadata";
-      video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;display:block;";
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;";
 
       wrap.appendChild(video);
-      this.appendChild(wrap);
+      host.innerHTML = "";
+      host.appendChild(wrap);
 
       // Per-second retention tracking (anonymous viewers)
       try {

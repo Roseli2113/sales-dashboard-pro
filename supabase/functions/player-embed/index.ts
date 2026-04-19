@@ -52,8 +52,13 @@ Deno.serve(async (req) => {
 
   class VPlaySmartPlayer extends HTMLElement {
     connectedCallback() {
+      // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
+      host.style.display = "block";
+      host.style.width = host.style.width || "100%";
+
       var wrap = document.createElement("div");
-      wrap.style.cssText = "position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:12px;overflow:hidden;";
+      // Use padding-bottom hack for 9:16 aspect ratio (works in Quirks Mode, unlike aspect-ratio CSS)
+      wrap.style.cssText = "position:relative;width:100%;padding-bottom:177.78%;background:#000;border-radius:12px;overflow:hidden;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;

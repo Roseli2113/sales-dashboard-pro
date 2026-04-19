@@ -48,10 +48,17 @@ Deno.serve(async (req) => {
   var VIDEO_URL = ${safeUrl};
   var VIDEO_ID = ${safeId};
 
-  if (customElements.get("vplay-smartplayer")) return;
+  if (customElements.get("vplay-smartplayer")) {
+    // Already defined — still try to render any existing nodes for this video
+    try {
+      document.querySelectorAll('vplay-smartplayer[id="vid-' + VIDEO_ID + '"]').forEach(function(el){
+        if (!el.__vplayRendered) { el.__vplayRendered = true; renderInto(el); }
+      });
+    } catch(e) {}
+    return;
+  }
 
-  class VPlaySmartPlayer extends HTMLElement {
-    connectedCallback() {
+  function renderInto(host) {
       var wrap = document.createElement("div");
       wrap.style.cssText = "position:relative;width:100%;aspect-ratio:9/16;background:#000;border-radius:12px;overflow:hidden;";
 
@@ -64,7 +71,8 @@ Deno.serve(async (req) => {
       video.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;display:block;";
 
       wrap.appendChild(video);
-      this.appendChild(wrap);
+      host.innerHTML = "";
+      host.appendChild(wrap);
 
       // Per-second retention tracking (anonymous viewers)
       try {
@@ -100,10 +108,32 @@ Deno.serve(async (req) => {
         setInterval(flush, 2000);
         window.addEventListener("beforeunload", flush);
       } catch(e) { /* ignore tracking errors */ }
+  }
+
+  class VPlaySmartPlayer extends HTMLElement {
+    connectedCallback() {
+      if (this.__vplayRendered) return;
+      this.__vplayRendered = true;
+      renderInto(this);
     }
   }
 
   customElements.define("vplay-smartplayer", VPlaySmartPlayer);
+
+  // Fallback: also render any matching elements already in the DOM
+  // (covers cases where WordPress/Elementor wraps the script weirdly)
+  function bootstrap() {
+    try {
+      document.querySelectorAll('vplay-smartplayer[id="vid-' + VIDEO_ID + '"]').forEach(function(el){
+        if (!el.__vplayRendered) { el.__vplayRendered = true; renderInto(el); }
+      });
+    } catch(e) {}
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrap);
+  } else {
+    bootstrap();
+  }
 })();`;
 
     return new Response(js, {

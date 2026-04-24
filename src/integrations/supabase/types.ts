@@ -179,6 +179,7 @@ export type Database = {
           folder_id: string | null
           id: string
           name: string
+          pitch_time_seconds: number
           player_version: string
           status: string
           thumbnail_url: string | null
@@ -193,6 +194,7 @@ export type Database = {
           folder_id?: string | null
           id?: string
           name: string
+          pitch_time_seconds?: number
           player_version?: string
           status?: string
           thumbnail_url?: string | null
@@ -207,6 +209,7 @@ export type Database = {
           folder_id?: string | null
           id?: string
           name?: string
+          pitch_time_seconds?: number
           player_version?: string
           status?: string
           thumbnail_url?: string | null

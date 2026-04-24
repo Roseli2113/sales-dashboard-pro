@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD COLUMN IF NOT EXISTS pitch_time_seconds integer NOT NULL DEFAULT 0;

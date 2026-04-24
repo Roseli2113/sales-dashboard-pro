@@ -23,6 +23,9 @@ import type { Tables } from "@/integrations/supabase/types";
 import { fetchRetentionCurve, type RetentionPoint } from "@/lib/retention";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 
 const sideMenu = [
   { label: "Detalhes", icon: VideoIcon, link: "" },
@@ -42,6 +45,7 @@ export default function VideoAnalytics() {
   const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
   const [editingPitch, setEditingPitch] = useState(false);
   const [pitchInput, setPitchInput] = useState("0:00");
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -76,15 +80,23 @@ export default function VideoAnalytics() {
 
   const pitchTimeLabel = `${Math.floor(pitchSeconds / 60)}:${String(pitchSeconds % 60).padStart(2, "0")}`;
 
-  const savePitchTime = async () => {
-    if (!id) return;
-    const m = pitchInput.trim().match(/^(\d+):(\d{1,2})$/);
+  const parsePitchInput = (raw: string): number | null => {
+    const m = raw.trim().match(/^(\d+):(\d{1,2})$/);
     let total = 0;
     if (m) {
       total = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-    } else if (/^\d+$/.test(pitchInput.trim())) {
-      total = parseInt(pitchInput.trim(), 10);
+    } else if (/^\d+$/.test(raw.trim())) {
+      total = parseInt(raw.trim(), 10);
     } else {
+      return null;
+    }
+    return total;
+  };
+
+  const savePitchTime = async (silent = false) => {
+    if (!id) return;
+    const total = parsePitchInput(pitchInput);
+    if (total === null) {
       toast.error("Formato inválido. Use mm:ss (ex: 4:00)");
       return;
     }
@@ -93,11 +105,15 @@ export default function VideoAnalytics() {
       toast.error(`Tempo maior que a duração do vídeo (${dur}s)`);
       return;
     }
+    if ((video?.pitch_time_seconds ?? 0) === total) {
+      setEditingPitch(false);
+      return;
+    }
     const { error } = await supabase.from("videos").update({ pitch_time_seconds: total }).eq("id", id);
     if (error) { toast.error("Erro ao salvar"); return; }
     setVideo((v) => v ? { ...v, pitch_time_seconds: total } : v);
     setEditingPitch(false);
-    toast.success("Tempo do pitch atualizado");
+    if (!silent) toast.success("Tempo do pitch atualizado");
   };
 
   const totals = metrics.reduce(
@@ -175,16 +191,21 @@ export default function VideoAnalytics() {
           <div className="mt-4 border-b">
             <div className="flex gap-6">
               {tabs.map((tab, i) => (
-                <button key={tab} className={`pb-3 text-sm transition-colors ${i === 0 ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(i)}
+                  className={`pb-3 text-sm transition-colors ${i === activeTab ? "border-b-2 border-primary font-medium text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                >
                   {tab}
                 </button>
               ))}
             </div>
           </div>
 
+          {activeTab === 0 ? (
           <div className="mt-6 rounded-lg border bg-card p-4">
             <p className="mb-2 text-xs text-muted-foreground text-right">Atualizado agora mesmo</p>
-            <div className="relative h-72 overflow-hidden rounded-md bg-foreground/95">
+            <div className="relative h-[420px] overflow-hidden rounded-md bg-foreground/95">
               {video?.file_url && (
                 <video
                   src={video.file_url}
@@ -228,7 +249,16 @@ export default function VideoAnalytics() {
                 : "📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam."}
             </p>
           </div>
+          ) : (
+            <div className="mt-6 rounded-lg border bg-card p-10 text-center">
+              <h3 className="text-lg font-semibold text-foreground">{tabs[activeTab]}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Sem dados ainda. As estatísticas de <span className="font-medium">{tabs[activeTab].toLowerCase()}</span> aparecerão aqui assim que seus espectadores começarem a assistir o vídeo embedado.
+              </p>
+            </div>
+          )}
 
+          {activeTab === 0 && (
           <div className="mt-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">Métricas</h2>
@@ -244,36 +274,64 @@ export default function VideoAnalytics() {
                   <p className="mt-1 text-xs text-muted-foreground">{m.label}</p>
                   {m.isPitch && (
                     <div className="mt-2">
-                      {editingPitch ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            value={pitchInput}
-                            onChange={(e) => setPitchInput(e.target.value)}
-                            placeholder="mm:ss"
-                            className="h-7 text-xs"
-                            autoFocus
-                            onKeyDown={(e) => { if (e.key === "Enter") savePitchTime(); if (e.key === "Escape") setEditingPitch(false); }}
-                          />
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={savePitchTime}><Check className="h-3.5 w-3.5" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingPitch(false)}><X className="h-3.5 w-3.5" /></Button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setEditingPitch(true)}
-                          className="flex items-center gap-1 text-[11px] text-primary hover:underline"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          {pitchSeconds > 0 ? `Pitch em ${pitchTimeLabel}` : "Definir tempo"}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setEditingPitch(true)}
+                        className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        {pitchSeconds > 0
+                          ? `Pitch ${pitchTimeLabel} — ${computedPitchRetention.toFixed(2)}%`
+                          : "Definir tempo"}
+                      </button>
                     </div>
                   )}
                 </div>
               ))}
             </div>
           </div>
+          )}
         </div>
       </div>
+
+      <Dialog open={editingPitch} onOpenChange={setEditingPitch}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Tempo do Pitch</DialogTitle>
+            <DialogDescription>
+              Informe o momento exato do pitch no vídeo (formato mm:ss). O salvamento é automático ao sair do campo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input
+              value={pitchInput}
+              onChange={(e) => setPitchInput(e.target.value)}
+              onBlur={() => savePitchTime(true)}
+              placeholder="mm:ss (ex: 4:00)"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") savePitchTime();
+                if (e.key === "Escape") setEditingPitch(false);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Retenção calculada neste instante:{" "}
+              <span className="font-medium text-foreground">
+                {(() => {
+                  const t = parsePitchInput(pitchInput);
+                  if (t === null || !retentionData.length) return "—";
+                  let closest = retentionData[0];
+                  for (const p of retentionData) if (Math.abs(p.second - t) < Math.abs(closest.second - t)) closest = p;
+                  return `${closest.retention.toFixed(2)}%`;
+                })()}
+              </span>
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPitch(false)}>Cancelar</Button>
+            <Button onClick={() => savePitchTime()}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -53,24 +53,89 @@ Deno.serve(async (req) => {
   class VPlaySmartPlayer extends HTMLElement {
     connectedCallback() {
       // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
+      var host = this;
       host.style.display = "block";
       host.style.width = host.style.width || "100%";
 
       var wrap = document.createElement("div");
       // Use padding-bottom hack for 9:16 aspect ratio (works in Quirks Mode, unlike aspect-ratio CSS)
-      wrap.style.cssText = "position:relative;width:100%;padding-bottom:177.78%;background:#000;border-radius:12px;overflow:hidden;";
+      wrap.style.cssText = "position:relative;width:100%;padding-bottom:177.78%;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
-      video.controls = true;
+      // No native controls — custom progress bar (non-seekable) for VSL
+      video.controls = false;
       video.playsInline = true;
       video.setAttribute("playsinline", "");
-      video.preload = "metadata";
+      video.setAttribute("webkit-playsinline", "");
+      video.preload = "auto";
+      video.muted = true;
+      video.autoplay = true;
+      video.setAttribute("muted", "");
+      video.setAttribute("autoplay", "");
       video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;";
 
       wrap.appendChild(video);
+
+      // Unmute overlay (VSL style)
+      var unmuteOverlay = document.createElement("div");
+      unmuteOverlay.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;z-index:2;cursor:pointer;transition:opacity .25s;";
+      unmuteOverlay.innerHTML = '<div style="font-size:18px;font-weight:600;margin-bottom:10px;text-shadow:0 2px 8px rgba(0,0,0,.6);">Seu vídeo já começou</div>' +
+        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;margin-bottom:10px;border:2px solid rgba(255,255,255,.25);">' +
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>' +
+        '</div>' +
+        '<div style="font-size:14px;text-shadow:0 2px 8px rgba(0,0,0,.6);">Clique para ouvir</div>';
+      wrap.appendChild(unmuteOverlay);
+
+      function unmute() {
+        video.muted = false;
+        video.volume = 1;
+        var p = video.play();
+        if (p && p.catch) p.catch(function(){});
+        unmuteOverlay.style.opacity = "0";
+        setTimeout(function(){ unmuteOverlay.style.display = "none"; }, 300);
+      }
+      unmuteOverlay.addEventListener("click", unmute);
+
+      // Custom progress bar (visible but NOT seekable)
+      var progressWrap = document.createElement("div");
+      progressWrap.style.cssText = "position:absolute;left:0;right:0;bottom:0;height:6px;background:rgba(255,255,255,0.18);z-index:3;pointer-events:none;";
+      var progressBar = document.createElement("div");
+      progressBar.style.cssText = "height:100%;width:0%;background:#ef4444;transition:width .2s linear;";
+      progressWrap.appendChild(progressBar);
+      wrap.appendChild(progressWrap);
+
+      video.addEventListener("timeupdate", function() {
+        if (video.duration && isFinite(video.duration)) {
+          progressBar.style.width = ((video.currentTime / video.duration) * 100) + "%";
+        }
+      });
+
+      // Block any seeking attempt — keep playhead at max watched position
+      var maxTime = 0;
+      video.addEventListener("timeupdate", function() {
+        if (video.currentTime > maxTime) maxTime = video.currentTime;
+      });
+      video.addEventListener("seeking", function() {
+        // Allow tiny drift; if user tries to jump ahead, snap back
+        if (Math.abs(video.currentTime - maxTime) > 0.5) {
+          video.currentTime = maxTime;
+        }
+      });
+
+      // Click on video toggles play/pause (but not seek). If muted, click unmutes.
+      video.addEventListener("click", function(e) {
+        e.preventDefault();
+        if (video.muted) { unmute(); return; }
+        if (video.paused) video.play().catch(function(){}); else video.pause();
+      });
+
       host.innerHTML = "";
       host.appendChild(wrap);
+
+      // Try autoplay (muted is required by browsers)
+      var ap = video.play();
+      if (ap && ap.catch) ap.catch(function(){});
 
       // Per-second retention tracking (anonymous viewers)
       try {

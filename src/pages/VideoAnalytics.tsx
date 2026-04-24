@@ -12,13 +12,17 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Check,
+  X,
 } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { fetchRetentionCurve, type RetentionPoint } from "@/lib/retention";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const sideMenu = [
   { label: "Detalhes", icon: VideoIcon, link: "" },
@@ -36,6 +40,8 @@ export default function VideoAnalytics() {
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [metrics, setMetrics] = useState<Tables<"video_metrics">[]>([]);
   const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
+  const [editingPitch, setEditingPitch] = useState(false);
+  const [pitchInput, setPitchInput] = useState("0:00");
 
   useEffect(() => {
     if (!id) return;
@@ -46,6 +52,8 @@ export default function VideoAnalytics() {
       ]);
       if (vRes.data) {
         setVideo(vRes.data);
+        const pt = vRes.data.pitch_time_seconds ?? 0;
+        setPitchInput(`${Math.floor(pt / 60)}:${String(pt % 60).padStart(2, "0")}`);
         const curve = await fetchRetentionCurve(id, vRes.data.duration_seconds ?? 60);
         setRetentionData(curve);
       }
@@ -53,6 +61,44 @@ export default function VideoAnalytics() {
     };
     load();
   }, [id]);
+
+  const pitchSeconds = video?.pitch_time_seconds ?? 0;
+
+  // Compute pitch retention dynamically: % retention at the pitch second based on the curve.
+  const computedPitchRetention = (() => {
+    if (!retentionData.length || !pitchSeconds) return 0;
+    let closest = retentionData[0];
+    for (const p of retentionData) {
+      if (Math.abs(p.second - pitchSeconds) < Math.abs(closest.second - pitchSeconds)) closest = p;
+    }
+    return closest.retention;
+  })();
+
+  const pitchTimeLabel = `${Math.floor(pitchSeconds / 60)}:${String(pitchSeconds % 60).padStart(2, "0")}`;
+
+  const savePitchTime = async () => {
+    if (!id) return;
+    const m = pitchInput.trim().match(/^(\d+):(\d{1,2})$/);
+    let total = 0;
+    if (m) {
+      total = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    } else if (/^\d+$/.test(pitchInput.trim())) {
+      total = parseInt(pitchInput.trim(), 10);
+    } else {
+      toast.error("Formato inválido. Use mm:ss (ex: 4:00)");
+      return;
+    }
+    const dur = video?.duration_seconds ?? 0;
+    if (dur && total > dur) {
+      toast.error(`Tempo maior que a duração do vídeo (${dur}s)`);
+      return;
+    }
+    const { error } = await supabase.from("videos").update({ pitch_time_seconds: total }).eq("id", id);
+    if (error) { toast.error("Erro ao salvar"); return; }
+    setVideo((v) => v ? { ...v, pitch_time_seconds: total } : v);
+    setEditingPitch(false);
+    toast.success("Tempo do pitch atualizado");
+  };
 
   const totals = metrics.reduce(
     (acc, m) => ({
@@ -78,7 +124,7 @@ export default function VideoAnalytics() {
     { value: String(totals.plays), label: "Plays" },
     { value: String(totals.uniquePlays), label: "Plays Únicos" },
     { value: `${totals.playRate.toFixed(2)}%`, label: "Play Rate" },
-    { value: `${totals.pitchRetention.toFixed(2)}%`, label: "Retenção ao Pitch" },
+    { value: `${computedPitchRetention.toFixed(2)}%`, label: "Retenção ao Pitch", isPitch: true },
     { value: String(totals.pitchAudience), label: "Audiência do Pitch" },
     { value: `${totals.engagement.toFixed(2)}%`, label: "Engajamento" },
     { value: String(totals.buttonClicks), label: "Cliques no Botão" },
@@ -163,6 +209,15 @@ export default function VideoAnalytics() {
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
                     />
                     <Area type="monotone" dataKey="retention" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#retGrad)" />
+                    {pitchSeconds > 0 && (
+                      <ReferenceLine
+                        x={pitchTimeLabel}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        label={{ value: `Pitch ${pitchTimeLabel}`, position: "top", fill: "hsl(var(--primary))", fontSize: 11 }}
+                      />
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -187,6 +242,32 @@ export default function VideoAnalytics() {
                 <div key={m.label} className="rounded-lg border bg-card p-4">
                   <p className="text-xl font-bold text-card-foreground">{m.value}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{m.label}</p>
+                  {m.isPitch && (
+                    <div className="mt-2">
+                      {editingPitch ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={pitchInput}
+                            onChange={(e) => setPitchInput(e.target.value)}
+                            placeholder="mm:ss"
+                            className="h-7 text-xs"
+                            autoFocus
+                            onKeyDown={(e) => { if (e.key === "Enter") savePitchTime(); if (e.key === "Escape") setEditingPitch(false); }}
+                          />
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={savePitchTime}><Check className="h-3.5 w-3.5" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingPitch(false)}><X className="h-3.5 w-3.5" /></Button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingPitch(true)}
+                          className="flex items-center gap-1 text-[11px] text-primary hover:underline"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          {pitchSeconds > 0 ? `Pitch em ${pitchTimeLabel}` : "Definir tempo"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -12,8 +12,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  Check,
-  X,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,

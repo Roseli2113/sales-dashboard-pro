@@ -88,8 +88,10 @@ Deno.serve(async (req) => {
       wrap.appendChild(unmuteOverlay);
 
       function unmute() {
+        video.currentTime = 0;
         video.muted = false;
         video.volume = 1;
+        maxTime = 0;
         var p = video.play();
         if (p && p.catch) p.catch(function(){});
         unmuteOverlay.style.opacity = "0";

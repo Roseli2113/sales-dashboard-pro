@@ -21,7 +21,7 @@ export default function Plans() {
   const load = async () => {
     const [{ data: planData }, { data: adminRole }] = await Promise.all([
       (supabase as any).from("plan_cards").select("*").order("sort_order"),
-      user ? supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }) : Promise.resolve({ data: false }),
+      user ? (supabase as any).rpc("has_role", { _user_id: user.id, _role: "admin" }) : Promise.resolve({ data: false }),
     ]);
     setPlans(planData ?? []);
     setIsAdmin(!!adminRole);

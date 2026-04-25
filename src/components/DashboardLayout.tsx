@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -18,6 +18,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel("vplay-online-users");
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+    });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();

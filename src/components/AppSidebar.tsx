@@ -1,6 +1,9 @@
-import { Video, FlaskConical, BarChart3, Settings, HelpCircle, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Video, FlaskConical, BarChart3, Settings, HelpCircle, Play, ShieldCheck, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +19,7 @@ import {
 
 const mainItems = [
   { title: "Meus vídeos", url: "/dashboard", icon: Video },
+  { title: "Planos", url: "/dashboard/plans", icon: CreditCard },
   { title: "Testes A/B", url: "/dashboard/ab-tests", icon: FlaskConical },
   { title: "Conversões", url: "/dashboard/conversions", icon: BarChart3 },
 ];
@@ -29,7 +33,14 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    if (!user) return setIsAdmin(false);
+    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   return (
     <Sidebar collapsible="icon">
@@ -63,6 +74,16 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/dashboard/admin")} className="h-10">
+                    <NavLink to="/dashboard/admin" end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
+                      <ShieldCheck className="h-4 w-4" />
+                      {!collapsed && <span>Área Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

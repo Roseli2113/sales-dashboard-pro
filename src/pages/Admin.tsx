@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { DashboardLayout, useOnlineUsers } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,8 @@ export default function Admin() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const onlineUsers = useOnlineUsers();
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-webhook`;
 
   const stats = useMemo(() => {
@@ -57,16 +57,6 @@ export default function Admin() {
 
   useEffect(() => {
     loadAdminData();
-    const channel = supabase.channel("vplay-online-users");
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        setOnlineUsers(Object.keys(state).length);
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const adminAction = async (action: "block" | "unblock" | "delete", userId: string) => {

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,16 +15,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const OnlineUsersContext = createContext(0);
+
+export function useOnlineUsers() {
+  return useContext(OnlineUsersContext);
+}
+
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const [onlineUsers, setOnlineUsers] = useState(0);
 
   useEffect(() => {
     if (!user) return;
-    const channel = supabase.channel("vplay-online-users");
+    const channel = supabase
+      .channel("vplay-online-users")
+      .on("presence", { event: "sync" }, () => {
+        setOnlineUsers(Object.keys(channel.presenceState()).length);
+      });
+
     channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+      if (status === "SUBSCRIBED") {
+        channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+      }
     });
     return () => {
       supabase.removeChannel(channel);
@@ -39,6 +53,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const initials = user?.email?.slice(0, 2).toUpperCase() || "VP";
 
   return (
+    <OnlineUsersContext.Provider value={onlineUsers}>
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
@@ -73,5 +88,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
     </SidebarProvider>
+    </OnlineUsersContext.Provider>
   );
 }

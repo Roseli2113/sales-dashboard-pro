@@ -35,15 +35,125 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          event_type: string | null
+          id: string
+          plan: string | null
+          processed_at: string
+          provider: string
+          raw_payload: Json
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          event_type?: string | null
+          id?: string
+          plan?: string | null
+          processed_at?: string
+          provider?: string
+          raw_payload?: Json
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          event_type?: string | null
+          id?: string
+          plan?: string | null
+          processed_at?: string
+          provider?: string
+          raw_payload?: Json
+        }
+        Relationships: []
+      }
+      payment_webhooks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          provider: string
+          secret_hint: string | null
+          updated_at: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider?: string
+          secret_hint?: string | null
+          updated_at?: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider?: string
+          secret_hint?: string | null
+          updated_at?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      plan_cards: {
+        Row: {
+          created_at: string
+          cta_text: string
+          cta_url: string | null
+          description: string | null
+          features: string[]
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_text?: string
+          cta_url?: string | null
+          description?: string | null
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_text?: string
+          cta_url?: string | null
+          description?: string | null
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
           id: string
+          phone: string | null
           plan: string
           plays_limit: number
           plays_used: number
+          status: string
           trial_ends_at: string | null
           updated_at: string
           user_id: string
@@ -53,9 +163,11 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          phone?: string | null
           plan?: string
           plays_limit?: number
           plays_used?: number
+          status?: string
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
@@ -65,11 +177,34 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          phone?: string | null
           plan?: string
           plays_limit?: number
           plays_used?: number
+          status?: string
           trial_ends_at?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -232,10 +367,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -362,6 +503,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const

@@ -1,11 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,18 @@ import {
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel("vplay-online-users");
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+    });
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,6 +52,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="gradient-hero text-primary-foreground text-xs">
                       {initials}
                     </AvatarFallback>
@@ -49,6 +63,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                     {user?.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Perfil</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>Sair</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

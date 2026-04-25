@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Service can record payment events" ON public.payment_events;

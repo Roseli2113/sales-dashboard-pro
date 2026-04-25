@@ -308,6 +308,7 @@ export type Database = {
       }
       videos: {
         Row: {
+          autoplay_settings: Json
           created_at: string
           duration_seconds: number | null
           file_url: string | null
@@ -323,6 +324,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          autoplay_settings?: Json
           created_at?: string
           duration_seconds?: number | null
           file_url?: string | null
@@ -338,6 +340,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          autoplay_settings?: Json
           created_at?: string
           duration_seconds?: number | null
           file_url?: string | null

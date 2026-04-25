@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -87,6 +87,12 @@ const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
   endSec: 1939,
 });
 
+function normalizeAutoplays(raw: unknown): Autoplay[] {
+  const value = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? [raw] : [];
+  const normalized = value.map((item) => ({ ...defaultAutoplay(), ...(item as Partial<Autoplay>) }));
+  return normalized.length ? normalized : [defaultAutoplay()];
+}
+
 function fmt(s: number) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
   const sec = Math.floor(s % 60).toString().padStart(2, "0");
@@ -106,20 +112,51 @@ export default function VideoEdit() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const hydratedRef = useRef(false);
 
   const editing = autoplays.find((a) => a.id === editingId) ?? null;
+  const previewAutoplay = editing ?? autoplays[0] ?? defaultAutoplay();
 
   function updateEditing(patch: Partial<Autoplay>) {
     if (!editing) return;
     setAutoplays((list) => list.map((a) => (a.id === editing.id ? { ...a, ...patch } : a)));
   }
 
+  async function saveAutoplays(nextAutoplays = autoplays) {
+    if (!id) return;
+    setSaveStatus("saving");
+    const { error } = await supabase
+      .from("videos")
+      .update({ autoplay_settings: nextAutoplays as unknown as Tables<"videos">["autoplay_settings"] })
+      .eq("id", id);
+
+    if (error) {
+      setSaveStatus("idle");
+      toast({ title: "Erro ao salvar Autoplay", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSaveStatus("saved");
+  }
+
   useEffect(() => {
     if (!id) return;
     supabase.from("videos").select("*").eq("id", id).single().then(({ data }) => {
-      if (data) setVideo(data);
+      if (data) {
+        setVideo(data);
+        setAutoplays(normalizeAutoplays(data.autoplay_settings));
+        hydratedRef.current = true;
+      }
     });
   }, [id]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !id) return;
+    setSaveStatus("saving");
+    const timer = window.setTimeout(() => saveAutoplays(autoplays), 600);
+    return () => window.clearTimeout(timer);
+  }, [autoplays, id]);
 
   return (
     <DashboardLayout>
@@ -138,8 +175,8 @@ export default function VideoEdit() {
               autoplay={editing}
               onChange={updateEditing}
               onCancel={() => setEditingId(null)}
-              onSave={() => {
-                setEditingId(null);
+              onSave={async () => {
+                await saveAutoplays();
                 toast({ title: "Autoplay salvo" });
               }}
             />
@@ -231,8 +268,10 @@ export default function VideoEdit() {
                     {settings.find((s) => s.key === active)?.label}
                   </Badge>
                 )}
-                {active === "smart_autoplay" && (
-                  <span className="text-xs text-primary">Visualizando o Smart Autoplay</span>
+                {(active === "smart_autoplay" || editing) && (
+                  <span className="text-xs text-primary">
+                    {saveStatus === "saving" ? "Salvando..." : saveStatus === "saved" ? "Salvo e aplicado no embed" : "Visualizando o Smart Autoplay"}
+                  </span>
                 )}
               </div>
             </div>
@@ -266,15 +305,15 @@ export default function VideoEdit() {
                     editing?.pulse ? "animate-pulse" : ""
                   }`}
                   style={{
-                    backgroundColor: editing?.bgColor ?? "#000000",
-                    color: editing?.textColor ?? "#ffffff",
+                    backgroundColor: previewAutoplay.bgColor,
+                    color: previewAutoplay.textColor,
                   }}
                 >
                   <span className="text-xs font-semibold">
-                    {editing?.topText ?? "Seu vídeo já começou"}
+                    {previewAutoplay.topText}
                   </span>
                   <Volume2 className="h-6 w-6" />
-                  <span className="text-xs">{editing?.bottomText ?? "Clique para ouvir"}</span>
+                  <span className="text-xs">{previewAutoplay.bottomText}</span>
                 </div>
               )}
             </div>

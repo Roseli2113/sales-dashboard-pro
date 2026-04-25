@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          event_type: string | null
+          id: string
+          plan: string | null
+          processed_at: string
+          provider: string
+          raw_payload: Json
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          event_type?: string | null
+          id?: string
+          plan?: string | null
+          processed_at?: string
+          provider?: string
+          raw_payload?: Json
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          event_type?: string | null
+          id?: string
+          plan?: string | null
+          processed_at?: string
+          provider?: string
+          raw_payload?: Json
+        }
+        Relationships: []
+      }
       payment_webhooks: {
         Row: {
           created_at: string

@@ -39,7 +39,7 @@ export function AppSidebar() {
 
   useEffect(() => {
     if (!user) return setIsAdmin(false);
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }) => setIsAdmin(!!data));
+    (supabase as any).rpc("has_role", { _user_id: user.id, _role: "admin" }).then(({ data }: { data: boolean | null }) => setIsAdmin(!!data));
   }, [user]);
 
   return (

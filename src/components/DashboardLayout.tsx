@@ -5,7 +5,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ import {
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   const handleSignOut = async () => {
     await signOut();
@@ -39,6 +40,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarImage src={avatarUrl} />
                     <AvatarFallback className="gradient-hero text-primary-foreground text-xs">
                       {initials}
                     </AvatarFallback>
@@ -49,6 +51,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                     {user?.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>Perfil</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>Sair</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

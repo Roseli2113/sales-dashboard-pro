@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: video, error } = await supabase
       .from("videos")
-      .select("id, file_url, name")
+      .select("id, file_url, name, autoplay_settings")
       .eq("id", videoId)
       .maybeSingle();
 
@@ -43,10 +43,26 @@ Deno.serve(async (req) => {
 
     const safeUrl = JSON.stringify(video.file_url);
     const safeId = JSON.stringify(video.id);
+    const autoplayList = Array.isArray(video.autoplay_settings)
+      ? video.autoplay_settings
+      : video.autoplay_settings
+        ? [video.autoplay_settings]
+        : [];
+    const autoplay = {
+      bgColor: "#000000",
+      textColor: "#ffffff",
+      pulse: false,
+      detectInteraction: true,
+      topText: "Seu vídeo já começou",
+      bottomText: "Clique para ouvir",
+      ...(autoplayList[0] ?? {}),
+    };
+    const safeAutoplay = JSON.stringify(autoplay);
 
     const js = `(function(){
   var VIDEO_URL = ${safeUrl};
   var VIDEO_ID = ${safeId};
+  var AUTOPLAY = ${safeAutoplay};
 
   if (customElements.get("vplay-smartplayer")) return;
 
@@ -79,12 +95,12 @@ Deno.serve(async (req) => {
 
       // Unmute overlay (VSL style)
       var unmuteOverlay = document.createElement("div");
-      unmuteOverlay.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;z-index:2;cursor:pointer;transition:opacity .25s;";
-      unmuteOverlay.innerHTML = '<div style="font-size:18px;font-weight:600;margin-bottom:10px;text-shadow:0 2px 8px rgba(0,0,0,.6);">Seu vídeo já começou</div>' +
-        '<div style="width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;margin-bottom:10px;border:2px solid rgba(255,255,255,.25);">' +
-        '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>' +
+      unmuteOverlay.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;background:" + (AUTOPLAY.bgColor || "#000000") + ";color:" + (AUTOPLAY.textColor || "#ffffff") + ";font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-align:center;z-index:2;cursor:pointer;transition:opacity .25s;border-radius:10px;padding:16px 18px;min-width:160px;box-shadow:0 10px 30px rgba(0,0,0,.25);" + (AUTOPLAY.pulse ? "animation:vplayPulse 1.5s ease-in-out infinite;" : "");
+      unmuteOverlay.innerHTML = '<style>@keyframes vplayPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}</style><div style="font-size:14px;font-weight:700;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,.35);">' + (AUTOPLAY.topText || 'Seu vídeo já começou') + '</div>' +
+        '<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">' +
+        '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>' +
         '</div>' +
-        '<div style="font-size:14px;text-shadow:0 2px 8px rgba(0,0,0,.6);">Clique para ouvir</div>';
+        '<div style="font-size:13px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,.35);">' + (AUTOPLAY.bottomText || 'Clique para ouvir') + '</div>';
       wrap.appendChild(unmuteOverlay);
 
       function unmute() {

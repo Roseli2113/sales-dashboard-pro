@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   const email = pick(payload, ["email", "customer.email", "data.customer.email", "data.object.customer_email", "data.object.customer_details.email", "payer.email"]);
-  const rawPlan = pick(payload, ["plan", "product", "product_name", "data.plan", "data.object.metadata.plan", "data.object.metadata.product", "items.0.price.nickname"]);
+  const rawPlan = pick(payload, ["plan", "product", "product_name", "data.plan", "data.object.metadata.plan", "data.object.metadata.product"]);
   const eventType = pick(payload, ["type", "event", "event_type"]);
-  const normalizedPlan = rawPlan.toLowerCase().includes("premium") ? "premium" : rawPlan.toLowerCase().includes("pro") || rawPlan.toLowerCase().includes("pró") ? "pro" : rawPlan.toLowerCase().includes("start") ? "start" : "";
+  const lowerPlan = rawPlan.toLowerCase();
+  const normalizedPlan = lowerPlan.includes("premium") ? "premium" : lowerPlan.includes("pro") || lowerPlan.includes("pró") ? "pro" : lowerPlan.includes("start") ? "start" : "";
 
   await supabase.from("payment_events").insert({
     provider: pick(payload, ["provider"]) || "custom",
@@ -35,7 +36,6 @@ Deno.serve(async (req) => {
   });
 
   if (email && normalizedPlan) {
-    await supabase.from("profiles").update({ plan: normalizedPlan, status: "active" }).ilike("display_name", email);
     const { data: users } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
     const user = users.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
     if (user) await supabase.from("profiles").update({ plan: normalizedPlan, status: "active" }).eq("user_id", user.id);

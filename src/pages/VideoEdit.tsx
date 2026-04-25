@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -87,6 +87,12 @@ const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
   endSec: 1939,
 });
 
+function normalizeAutoplays(raw: unknown): Autoplay[] {
+  const value = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? [raw] : [];
+  const normalized = value.map((item) => ({ ...defaultAutoplay(), ...(item as Partial<Autoplay>) }));
+  return normalized.length ? normalized : [defaultAutoplay()];
+}
+
 function fmt(s: number) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
   const sec = Math.floor(s % 60).toString().padStart(2, "0");
@@ -106,6 +112,8 @@ export default function VideoEdit() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const hydratedRef = useRef(false);
 
   const editing = autoplays.find((a) => a.id === editingId) ?? null;
 
@@ -114,12 +122,40 @@ export default function VideoEdit() {
     setAutoplays((list) => list.map((a) => (a.id === editing.id ? { ...a, ...patch } : a)));
   }
 
+  async function saveAutoplays(nextAutoplays = autoplays) {
+    if (!id) return;
+    setSaveStatus("saving");
+    const { error } = await supabase
+      .from("videos")
+      .update({ autoplay_settings: nextAutoplays as unknown as Tables<"videos">["autoplay_settings"] })
+      .eq("id", id);
+
+    if (error) {
+      setSaveStatus("idle");
+      toast({ title: "Erro ao salvar Autoplay", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setSaveStatus("saved");
+  }
+
   useEffect(() => {
     if (!id) return;
     supabase.from("videos").select("*").eq("id", id).single().then(({ data }) => {
-      if (data) setVideo(data);
+      if (data) {
+        setVideo(data);
+        setAutoplays(normalizeAutoplays(data.autoplay_settings));
+        hydratedRef.current = true;
+      }
     });
   }, [id]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !id) return;
+    setSaveStatus("saving");
+    const timer = window.setTimeout(() => saveAutoplays(autoplays), 600);
+    return () => window.clearTimeout(timer);
+  }, [autoplays, id]);
 
   return (
     <DashboardLayout>

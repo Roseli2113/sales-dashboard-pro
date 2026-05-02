@@ -23,12 +23,17 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
   const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js`;
   const embedUrl = `${origin}/embed/${videoId}`;
 
-  const jsCode = `<vplay-smartplayer id="${playerId}" style="display: block; margin: 0 auto; width: 100%;${responsive ? "" : " max-width: 400px;"}"></vplay-smartplayer>
+  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" style="display: block; margin: 0 auto; width: 100%;${responsive ? "" : " max-width: 400px;"}"></vplay-smartplayer>
 <script type="text/javascript">
-  var s = document.createElement("script");
-  s.src = "${playerScriptUrl}";
-  s.async = true;
-  document.head.appendChild(s);
+  (function(){
+    var SRC = "${playerScriptUrl}";
+    if (document.querySelector('script[data-vplay-src="' + SRC + '"]')) return;
+    var s = document.createElement("script");
+    s.src = SRC;
+    s.async = true;
+    s.setAttribute("data-vplay-src", SRC);
+    document.head.appendChild(s);
+  })();
 </script>`;
 
   const iframeCode = `<iframe src="${embedUrl}" width="100%" height="${responsive ? "auto" : "400"}" frameborder="0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;

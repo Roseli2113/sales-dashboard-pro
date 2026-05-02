@@ -20,10 +20,10 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
   const playerId = `vid-${videoId}`;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js`;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260502`;
   const embedUrl = `${origin}/embed/${videoId}`;
 
-  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" data-responsive="${responsive ? "true" : "false"}" style="display: block; margin: 0 auto; width: 100%;${responsive ? " max-width: 960px;" : " max-width: 400px;"}"></vplay-smartplayer>
+  const jsCode = `<vplay-smartplayer-v2 id="${playerId}" data-video-id="${videoId}" data-responsive="${responsive ? "true" : "false"}" style="display: block; margin: 0 auto; width: 100%;${responsive ? " max-width: 960px;" : " max-width: 400px;"}"></vplay-smartplayer-v2>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";

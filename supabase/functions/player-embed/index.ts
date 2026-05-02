@@ -41,8 +41,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const safeUrl = JSON.stringify(video.file_url);
-    const safeId = JSON.stringify(video.id);
     const autoplayList = Array.isArray(video.autoplay_settings)
       ? video.autoplay_settings
       : video.autoplay_settings
@@ -57,17 +55,61 @@ Deno.serve(async (req) => {
       bottomText: "Clique para ouvir",
       ...(autoplayList[0] ?? {}),
     };
-    const safeAutoplay = JSON.stringify(autoplay);
+    const initialConfig = {
+      [video.id]: {
+        url: video.file_url,
+        autoplay,
+      },
+    };
 
     const js = `(function(){
-  var VIDEO_URL = ${safeUrl};
-  var VIDEO_ID = ${safeId};
-  var AUTOPLAY = ${safeAutoplay};
+  var SUPA_URL = ${JSON.stringify(supabaseUrl)};
+  var SUPA_KEY = ${JSON.stringify(Deno.env.get("SUPABASE_ANON_KEY") ?? "")};
+  var FN_BASE = SUPA_URL + "/functions/v1/player-embed/";
+
+  // Per-page registry of video configs (shared across all <vplay-smartplayer> instances)
+  window.__VPLAY_CONFIGS = window.__VPLAY_CONFIGS || {};
+  var seed = ${JSON.stringify(initialConfig)};
+  for (var k in seed) { if (!window.__VPLAY_CONFIGS[k]) window.__VPLAY_CONFIGS[k] = seed[k]; }
+
+  function fetchConfig(id) {
+    if (window.__VPLAY_CONFIGS[id]) return Promise.resolve(window.__VPLAY_CONFIGS[id]);
+    var pendingKey = "__pending_" + id;
+    if (window.__VPLAY_CONFIGS[pendingKey]) return window.__VPLAY_CONFIGS[pendingKey];
+    var p = fetch(FN_BASE + id + ".json", { headers: { "apikey": SUPA_KEY } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(cfg){ if (cfg) window.__VPLAY_CONFIGS[id] = cfg; return cfg; })
+      .catch(function(){ return null; });
+    window.__VPLAY_CONFIGS[pendingKey] = p;
+    return p;
+  }
 
   if (customElements.get("vplay-smartplayer")) return;
 
   class VPlaySmartPlayer extends HTMLElement {
     connectedCallback() {
+      var host = this;
+      var videoId = host.getAttribute("data-video-id");
+      if (!videoId) {
+        // Fallback: parse video id from id attribute like "vid-<uuid>"
+        var idAttr = host.id || "";
+        var m = idAttr.match(/([0-9a-fA-F-]{36})/);
+        if (m) videoId = m[1];
+      }
+      if (!videoId) {
+        host.innerHTML = '<div style="padding:12px;color:#fff;background:#000;font-family:system-ui;">VPlay: data-video-id ausente</div>';
+        return;
+      }
+      var self = this;
+      fetchConfig(videoId).then(function(cfg){
+        if (!cfg || !cfg.url) {
+          host.innerHTML = '<div style="padding:12px;color:#fff;background:#000;font-family:system-ui;">VPlay: vídeo não encontrado</div>';
+          return;
+        }
+        self._render(videoId, cfg.url, cfg.autoplay || {});
+      });
+    }
+    _render(VIDEO_ID, VIDEO_URL, AUTOPLAY) {
       // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
       var host = this;
       host.style.display = "block";
@@ -194,6 +236,17 @@ Deno.serve(async (req) => {
 
   customElements.define("vplay-smartplayer", VPlaySmartPlayer);
 })();`;
+
+    // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)
+    if (url.pathname.endsWith(".json")) {
+      return new Response(JSON.stringify({ url: video.file_url, autoplay }), {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "public, max-age=60",
+        },
+      });
+    }
 
     return new Response(js, {
       headers: {

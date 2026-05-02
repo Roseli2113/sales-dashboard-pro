@@ -61,7 +61,7 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
         <div className="flex items-center justify-between border-t pt-4">
           <div>
             <p className="text-sm font-medium">Vídeo Responsivo</p>
-            <p className="text-xs text-muted-foreground">Use versões diferentes para dispositivos mobile e desktop</p>
+            <p className="text-xs text-muted-foreground">Adapta automaticamente ao formato do vídeo (16:9 horizontal ou 9:16 vertical), igual ao YouTube</p>
           </div>
           <Switch checked={responsive} onCheckedChange={setResponsive} />
         </div>

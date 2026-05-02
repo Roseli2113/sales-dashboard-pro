@@ -132,17 +132,22 @@ export default function Dashboard() {
         ) : (
           filtered.map((video) => (
             <div key={video.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center border-b last:border-0 px-4 py-3 hover:bg-secondary/50 transition-colors">
-              <Link to={`/dashboard/video/${video.id}`} className="flex items-center gap-3 group">
-                <div className="h-10 w-16 rounded bg-muted flex items-center justify-center overflow-hidden">
+              <Link to={`/dashboard/video/${video.id}`} className="flex items-center gap-3 group min-w-0">
+                <div className="h-10 w-16 shrink-0 rounded bg-muted flex items-center justify-center overflow-hidden">
                   {video.thumbnail_url ? (
                     <img src={video.thumbnail_url} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <Video className="h-5 w-5 text-muted-foreground" />
                   )}
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <Badge variant="outline" className="mb-0.5 text-[10px] border-primary/30 text-primary">{video.player_version}</Badge>
-                  <p className="text-sm font-medium text-card-foreground group-hover:text-primary transition-colors">{video.name}</p>
+                  <p
+                    className="text-sm font-medium text-card-foreground group-hover:text-primary transition-colors truncate"
+                    title={video.name}
+                  >
+                    {video.name}
+                  </p>
                 </div>
               </Link>
               <span className="w-28 text-center text-sm text-muted-foreground">

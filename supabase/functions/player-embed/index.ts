@@ -116,13 +116,14 @@ Deno.serve(async (req) => {
       host.style.width = host.style.width || "100%";
 
       var wrap = document.createElement("div");
-      // Aspect ratio is set after we know the video's natural dimensions.
-      // Default to 16:9 (desktop YouTube-like) until metadata loads.
-      // If host has data-responsive="true", we let orientation follow the video file
-      // (vertical → 9:16, horizontal → 16:9). Otherwise we honor explicit data-aspect or default 9:16 (legacy VSL behavior).
+      // In responsive mode desktop must stay 16:9 (YouTube-like/full-width) and crop the source if needed,
+      // otherwise vertical source videos create huge black areas inside Elementor pages.
       var responsive = host.getAttribute("data-responsive") === "true";
       var explicitAspect = host.getAttribute("data-aspect"); // e.g. "16:9" or "9:16"
-      var initialPad = explicitAspect === "16:9" ? "56.25%" : (responsive ? "56.25%" : "177.78%");
+      function isDesktopViewport() {
+        return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
+      }
+      var initialPad = explicitAspect === "16:9" ? "56.25%" : explicitAspect === "9:16" ? "177.78%" : (responsive && isDesktopViewport() ? "56.25%" : "177.78%");
       wrap.style.cssText = "position:relative;width:100%;padding-bottom:" + initialPad + ";background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
 
       var video = document.createElement("video");
@@ -137,19 +138,29 @@ Deno.serve(async (req) => {
       video.autoplay = true;
       video.setAttribute("muted", "");
       video.setAttribute("autoplay", "");
-      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:block;";
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;background:#000;display:block;";
 
       wrap.appendChild(video);
 
-      // Adjust aspect ratio once we know the real video dimensions
-      video.addEventListener("loadedmetadata", function() {
-        if (explicitAspect) return; // user forced an aspect
+      function applyAspect() {
+        if (explicitAspect) {
+          wrap.style.paddingBottom = explicitAspect === "16:9" ? "56.25%" : "177.78%";
+          return;
+        }
+        if (responsive && isDesktopViewport()) {
+          wrap.style.paddingBottom = "56.25%";
+          video.style.objectFit = "cover";
+          video.style.objectPosition = "center top";
+          return;
+        }
         if (!video.videoWidth || !video.videoHeight) return;
         var ratio = video.videoHeight / video.videoWidth;
-        // Always auto-fit container to the real video aspect ratio so there are no black bars.
-        // (Legacy 9:16 default is only used until metadata is available.)
         wrap.style.paddingBottom = (ratio * 100).toFixed(2) + "%";
-      });
+        video.style.objectFit = "cover";
+        video.style.objectPosition = "center center";
+      }
+      video.addEventListener("loadedmetadata", applyAspect);
+      window.addEventListener("resize", applyAspect);
 
       // Unmute overlay (VSL style)
       var unmuteOverlay = document.createElement("div");

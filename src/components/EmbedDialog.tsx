@@ -23,7 +23,7 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
   const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js`;
   const embedUrl = `${origin}/embed/${videoId}`;
 
-  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" style="display: block; margin: 0 auto; width: 100%;${responsive ? "" : " max-width: 400px;"}"></vplay-smartplayer>
+  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" data-responsive="${responsive ? "true" : "false"}" style="display: block; margin: 0 auto; width: 100%;${responsive ? " max-width: 960px;" : " max-width: 400px;"}"></vplay-smartplayer>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";

@@ -23,7 +23,7 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
   const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js`;
   const embedUrl = `${origin}/embed/${videoId}`;
 
-  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" style="display: block; margin: 0 auto; width: 100%;${responsive ? "" : " max-width: 400px;"}"></vplay-smartplayer>
+  const jsCode = `<vplay-smartplayer id="${playerId}" data-video-id="${videoId}" data-responsive="${responsive ? "true" : "false"}" style="display: block; margin: 0 auto; width: 100%;${responsive ? " max-width: 960px;" : " max-width: 400px;"}"></vplay-smartplayer>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";
@@ -61,7 +61,7 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
         <div className="flex items-center justify-between border-t pt-4">
           <div>
             <p className="text-sm font-medium">Vídeo Responsivo</p>
-            <p className="text-xs text-muted-foreground">Use versões diferentes para dispositivos mobile e desktop</p>
+            <p className="text-xs text-muted-foreground">Adapta automaticamente ao formato do vídeo (16:9 horizontal ou 9:16 vertical), igual ao YouTube</p>
           </div>
           <Switch checked={responsive} onCheckedChange={setResponsive} />
         </div>

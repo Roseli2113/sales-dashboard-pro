@@ -116,8 +116,14 @@ Deno.serve(async (req) => {
       host.style.width = host.style.width || "100%";
 
       var wrap = document.createElement("div");
-      // Use padding-bottom hack for 9:16 aspect ratio (works in Quirks Mode, unlike aspect-ratio CSS)
-      wrap.style.cssText = "position:relative;width:100%;padding-bottom:177.78%;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
+      // Aspect ratio is set after we know the video's natural dimensions.
+      // Default to 16:9 (desktop YouTube-like) until metadata loads.
+      // If host has data-responsive="true", we let orientation follow the video file
+      // (vertical → 9:16, horizontal → 16:9). Otherwise we honor explicit data-aspect or default 9:16 (legacy VSL behavior).
+      var responsive = host.getAttribute("data-responsive") === "true";
+      var explicitAspect = host.getAttribute("data-aspect"); // e.g. "16:9" or "9:16"
+      var initialPad = explicitAspect === "16:9" ? "56.25%" : (responsive ? "56.25%" : "177.78%");
+      wrap.style.cssText = "position:relative;width:100%;padding-bottom:" + initialPad + ";background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -134,6 +140,17 @@ Deno.serve(async (req) => {
       video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;";
 
       wrap.appendChild(video);
+
+      // Adjust aspect ratio once we know the real video dimensions
+      video.addEventListener("loadedmetadata", function() {
+        if (explicitAspect) return; // user forced an aspect
+        if (!video.videoWidth || !video.videoHeight) return;
+        var ratio = video.videoHeight / video.videoWidth;
+        // Only auto-fit when responsive is enabled; otherwise keep legacy 9:16
+        if (responsive) {
+          wrap.style.paddingBottom = (ratio * 100).toFixed(2) + "%";
+        }
+      });
 
       // Unmute overlay (VSL style)
       var unmuteOverlay = document.createElement("div");

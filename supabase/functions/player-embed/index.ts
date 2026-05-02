@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       video.autoplay = true;
       video.setAttribute("muted", "");
       video.setAttribute("autoplay", "");
-      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block;";
+      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:block;";
 
       wrap.appendChild(video);
 
@@ -146,10 +146,9 @@ Deno.serve(async (req) => {
         if (explicitAspect) return; // user forced an aspect
         if (!video.videoWidth || !video.videoHeight) return;
         var ratio = video.videoHeight / video.videoWidth;
-        // Only auto-fit when responsive is enabled; otherwise keep legacy 9:16
-        if (responsive) {
-          wrap.style.paddingBottom = (ratio * 100).toFixed(2) + "%";
-        }
+        // Always auto-fit container to the real video aspect ratio so there are no black bars.
+        // (Legacy 9:16 default is only used until metadata is available.)
+        wrap.style.paddingBottom = (ratio * 100).toFixed(2) + "%";
       });
 
       // Unmute overlay (VSL style)

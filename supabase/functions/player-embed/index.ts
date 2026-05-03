@@ -63,6 +63,16 @@ Deno.serve(async (req) => {
     };
 
     const js = `(function(){
+  // Prevent the whole IIFE from running twice when WordPress/Elementor injects the script
+  // multiple times (would otherwise throw NotSupportedError on customElements.define)
+  if (window.__VPLAY_LOADED__) {
+    // Still seed config for this video so the already-defined element can render it
+    window.__VPLAY_CONFIGS = window.__VPLAY_CONFIGS || {};
+    var _seed = ${JSON.stringify(initialConfig)};
+    for (var _k in _seed) { if (!window.__VPLAY_CONFIGS[_k]) window.__VPLAY_CONFIGS[_k] = _seed[_k]; }
+    return;
+  }
+  window.__VPLAY_LOADED__ = true;
   var SUPA_URL = ${JSON.stringify(supabaseUrl)};
   var SUPA_KEY = ${JSON.stringify(Deno.env.get("SUPABASE_ANON_KEY") ?? "")};
   var FN_BASE = SUPA_URL + "/functions/v1/player-embed/";
@@ -112,6 +122,10 @@ Deno.serve(async (req) => {
       var host = this;
       host.style.display = "block";
       host.style.width = host.style.width || "100%";
+      // Isolate stacking context so neighboring Elementor containers/buttons can't overlap the player
+      host.style.position = host.style.position || "relative";
+      host.style.zIndex = host.style.zIndex || "1";
+      host.style.isolation = "isolate";
 
       var wrap = document.createElement("div");
       // In responsive mode desktop must stay 16:9 (YouTube-like/full-width) and crop the source if needed,
@@ -259,8 +273,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (!customElements.get("vplay-smartplayer")) customElements.define("vplay-smartplayer", VPlaySmartPlayer);
-  if (!customElements.get("vplay-smartplayer-v2")) customElements.define("vplay-smartplayer-v2", VPlaySmartPlayer);
+  try { if (!customElements.get("vplay-smartplayer")) customElements.define("vplay-smartplayer", VPlaySmartPlayer); } catch(e){}
+  try { if (!customElements.get("vplay-smartplayer-v2")) customElements.define("vplay-smartplayer-v2", VPlaySmartPlayer); } catch(e){}
 })();`;
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)

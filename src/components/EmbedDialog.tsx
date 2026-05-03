@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Copy, Info } from "lucide-react";
+import { Copy, Info, Monitor, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 interface EmbedDialogProps {
@@ -12,18 +12,14 @@ interface EmbedDialogProps {
   videoUrl?: string | null;
 }
 
-export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDialogProps) {
-  const [tab, setTab] = useState<"javascript" | "iframe">("javascript");
-  const [responsive, setResponsive] = useState(false);
+export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
   const [optimize, setOptimize] = useState(true);
 
   const playerId = `vid-${videoId}`;
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260502`;
-  const embedUrl = `${origin}/embed/${videoId}`;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260503`;
 
-  const jsCode = `<vplay-smartplayer-v2 id="${playerId}" data-video-id="${videoId}" data-responsive="${responsive ? "true" : "false"}" style="display: block; margin: 0 auto; width: 100%;${responsive ? " max-width: 960px;" : " max-width: 400px;"}"></vplay-smartplayer-v2>
+  const desktopCode = `<vplay-smartplayer id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block; margin: 0 auto; width: 100%; max-width: 960px;"></vplay-smartplayer>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";
@@ -36,16 +32,58 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
   })();
 </script>`;
 
-  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="${responsive ? "auto" : "400"}" frameborder="0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+  const mobileCode = `<vplay-smartplayer id="${playerId}-mobile" data-video-id="${videoId}" data-aspect="9:16" style="display: block; margin: 0 auto; width: 100%; max-width: 420px;"></vplay-smartplayer>
+<script type="text/javascript">
+  (function(){
+    var SRC = "${playerScriptUrl}";
+    if (document.querySelector('script[data-vplay-src="' + SRC + '"]')) return;
+    var s = document.createElement("script");
+    s.src = SRC;
+    s.async = true;
+    s.setAttribute("data-vplay-src", SRC);
+    document.head.appendChild(s);
+  })();
+</script>`;
 
   const speedCode = `<script>!function(i,n){i._plt=i._plt||(n&&n.timeOrigin?n.timeOrigin+n.now():Date.now())}(window,performance);</script>`;
-
-  const code = tab === "javascript" ? jsCode : iframeCode;
 
   const copy = (text: string, label = "Código") => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
   };
+
+  const EmbedCodeCard = ({
+    title,
+    description,
+    code,
+    icon: Icon,
+  }: {
+    title: string;
+    description: string;
+    code: string;
+    icon: typeof Monitor;
+  }) => (
+    <div className="rounded-md border bg-card p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Icon className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">{title}</p>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" className="shrink-0" onClick={() => copy(code, title)}>
+          <Copy className="mr-2 h-3.5 w-3.5" />
+          Copiar
+        </Button>
+      </div>
+      <div className="relative rounded-md border bg-muted/30 p-3">
+        <pre className="max-h-40 whitespace-pre-wrap break-all text-[11px] text-foreground overflow-x-auto">{code}</pre>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,48 +96,26 @@ export function EmbedDialog({ open, onOpenChange, videoId, videoUrl }: EmbedDial
           <a href="#" className="text-primary hover:underline">Aprenda a incorporar seu vídeo.</a>
         </p>
 
-        <div className="flex items-center justify-between border-t pt-4">
-          <div>
-            <p className="text-sm font-medium">Vídeo Responsivo</p>
-            <p className="text-xs text-muted-foreground">Adapta automaticamente ao formato do vídeo (16:9 horizontal ou 9:16 vertical), igual ao YouTube</p>
-          </div>
-          <Switch checked={responsive} onCheckedChange={setResponsive} />
-        </div>
-
         <div className="border-t pt-4">
-          <div className="flex items-start justify-between mb-3">
+          <div className="mb-3">
             <div>
               <p className="text-sm font-medium">Copie o Código de Embed</p>
-              <p className="text-xs text-muted-foreground">Use o código abaixo para inserir o vídeo diretamente no seu site</p>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-[10px] rounded bg-success/20 text-success px-2 py-0.5 font-medium">Recomendado</span>
-              <div className="flex rounded-md border overflow-hidden">
-                <button
-                  onClick={() => setTab("javascript")}
-                  className={`px-3 py-1 text-xs ${tab === "javascript" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                >
-                  JavaScript
-                </button>
-                <button
-                  onClick={() => setTab("iframe")}
-                  className={`px-3 py-1 text-xs ${tab === "iframe" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                >
-                  iFrame
-                </button>
-              </div>
+              <p className="text-xs text-muted-foreground">Escolha um script fixo para desktop horizontal ou para celular vertical</p>
             </div>
           </div>
-          <div className="relative rounded-md border bg-muted/30 p-3">
-            <pre className="text-[11px] overflow-x-auto text-foreground whitespace-pre-wrap break-all max-h-32">{code}</pre>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="absolute top-1 right-1 h-7 w-7"
-              onClick={() => copy(code)}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
+          <div className="grid gap-3">
+            <EmbedCodeCard
+              title="Desktop / YouTube horizontal"
+              description="Formato fixo 16:9 para páginas no computador, sem depender do modo responsivo"
+              code={desktopCode}
+              icon={Monitor}
+            />
+            <EmbedCodeCard
+              title="Celular vertical"
+              description="Formato fixo 9:16 para página mobile e vídeos em pé"
+              code={mobileCode}
+              icon={Smartphone}
+            />
           </div>
         </div>
 

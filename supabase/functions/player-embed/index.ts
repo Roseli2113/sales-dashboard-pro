@@ -281,8 +281,10 @@ Deno.serve(async (req) => {
     }
   }
 
-  try { if (!customElements.get("vplay-smartplayer")) customElements.define("vplay-smartplayer", VPlaySmartPlayer); } catch(e){}
-  try { if (!customElements.get("vplay-smartplayer-v2")) customElements.define("vplay-smartplayer-v2", VPlaySmartPlayer); } catch(e){}
+  window.__VPLAY_SMARTPLAYER_CLASS__ = VPlaySmartPlayer;
+  ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
+    try { if (!customElements.get(tag)) customElements.define(tag, VPlaySmartPlayer); } catch(e){}
+  });
 })();`;
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)

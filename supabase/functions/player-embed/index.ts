@@ -65,14 +65,16 @@ Deno.serve(async (req) => {
     const js = `(function(){
   // Prevent the whole IIFE from running twice when WordPress/Elementor injects the script
   // multiple times (would otherwise throw NotSupportedError on customElements.define)
-  if (window.__VPLAY_LOADED__) {
+  if (window.__VPLAY_SMARTPLAYER_CLASS__) {
     // Still seed config for this video so the already-defined element can render it
     window.__VPLAY_CONFIGS = window.__VPLAY_CONFIGS || {};
     var _seed = ${JSON.stringify(initialConfig)};
     for (var _k in _seed) { if (!window.__VPLAY_CONFIGS[_k]) window.__VPLAY_CONFIGS[_k] = _seed[_k]; }
+    ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
+      try { if (!customElements.get(tag)) customElements.define(tag, window.__VPLAY_SMARTPLAYER_CLASS__); } catch(e){}
+    });
     return;
   }
-  window.__VPLAY_LOADED__ = true;
   var SUPA_URL = ${JSON.stringify(supabaseUrl)};
   var SUPA_KEY = ${JSON.stringify(Deno.env.get("SUPABASE_ANON_KEY") ?? "")};
   var FN_BASE = SUPA_URL + "/functions/v1/player-embed/";
@@ -122,9 +124,13 @@ Deno.serve(async (req) => {
       var host = this;
       host.style.display = "block";
       host.style.width = host.style.width || "100%";
-      // Isolate stacking context so neighboring Elementor containers/buttons can't overlap the player
-      host.style.position = host.style.position || "relative";
-      host.style.zIndex = host.style.zIndex || "1";
+      host.style.height = "auto";
+      host.style.overflow = "visible";
+      host.style.contain = "layout style";
+      host.style.clear = host.style.clear || "both";
+      // Keep the player in normal page flow so it never overlays or hides Elementor containers below it
+      host.style.position = "relative";
+      host.style.zIndex = "auto";
       host.style.isolation = "isolate";
 
       var wrap = document.createElement("div");
@@ -136,7 +142,7 @@ Deno.serve(async (req) => {
         return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
       }
       var initialPad = explicitAspect === "16:9" ? "56.25%" : explicitAspect === "9:16" ? "177.78%" : (responsive && isDesktopViewport() ? "56.25%" : "177.78%");
-      wrap.style.cssText = "position:relative;width:100%;padding-bottom:" + initialPad + ";background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
+      wrap.style.cssText = "display:block;position:relative;width:100%;height:0;padding:0 0 " + initialPad + " 0;margin:0 auto;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;clear:both;box-sizing:border-box;contain:layout paint;z-index:0;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -172,7 +178,9 @@ Deno.serve(async (req) => {
         video.style.objectPosition = "center center";
       }
       video.addEventListener("loadedmetadata", applyAspect);
-      window.addEventListener("resize", applyAspect);
+      var resizeTimer;
+      function onResize(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(applyAspect, 80); }
+      window.addEventListener("resize", onResize);
 
       // Unmute overlay (VSL style)
       var unmuteOverlay = document.createElement("div");
@@ -273,8 +281,10 @@ Deno.serve(async (req) => {
     }
   }
 
-  try { if (!customElements.get("vplay-smartplayer")) customElements.define("vplay-smartplayer", VPlaySmartPlayer); } catch(e){}
-  try { if (!customElements.get("vplay-smartplayer-v2")) customElements.define("vplay-smartplayer-v2", VPlaySmartPlayer); } catch(e){}
+  window.__VPLAY_SMARTPLAYER_CLASS__ = VPlaySmartPlayer;
+  ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
+    try { if (!customElements.get(tag)) customElements.define(tag, VPlaySmartPlayer); } catch(e){}
+  });
 })();`;
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)

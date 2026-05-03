@@ -84,8 +84,6 @@ Deno.serve(async (req) => {
     return p;
   }
 
-  if (customElements.get("vplay-smartplayer")) return;
-
   class VPlaySmartPlayer extends HTMLElement {
     connectedCallback() {
       var host = this;
@@ -261,7 +259,8 @@ Deno.serve(async (req) => {
     }
   }
 
-  customElements.define("vplay-smartplayer", VPlaySmartPlayer);
+  if (!customElements.get("vplay-smartplayer")) customElements.define("vplay-smartplayer", VPlaySmartPlayer);
+  if (!customElements.get("vplay-smartplayer-v2")) customElements.define("vplay-smartplayer-v2", VPlaySmartPlayer);
 })();`;
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)
@@ -270,7 +269,7 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "public, max-age=60",
+          "Cache-Control": "no-store, max-age=0",
         },
       });
     }
@@ -279,7 +278,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/javascript; charset=utf-8",
-        "Cache-Control": "public, max-age=60",
+        "Cache-Control": "no-store, max-age=0",
       },
     });
   } catch (e) {

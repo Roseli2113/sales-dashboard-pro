@@ -17,9 +17,10 @@ export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
 
   const playerId = `vid-${videoId}`;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260503`;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260503-mobile-layout`;
+  const playerTag = "vplay-smartplayer-v3";
 
-  const desktopCode = `<vplay-smartplayer id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block; margin: 0 auto; width: 100%; max-width: 960px;"></vplay-smartplayer>
+  const desktopCode = `<${playerTag} id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block; margin: 0 auto; width: 100%; max-width: 960px;"></${playerTag}>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";
@@ -32,7 +33,7 @@ export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
   })();
 </script>`;
 
-  const mobileCode = `<vplay-smartplayer id="${playerId}-mobile" data-video-id="${videoId}" data-aspect="9:16" style="display: block; margin: 0 auto; width: 100%; max-width: 420px;"></vplay-smartplayer>
+  const mobileCode = `<${playerTag} id="${playerId}-mobile" data-video-id="${videoId}" data-aspect="9:16" style="display: block; margin: 0 auto; width: 100%; max-width: 420px;"></${playerTag}>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";

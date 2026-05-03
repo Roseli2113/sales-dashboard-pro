@@ -65,14 +65,16 @@ Deno.serve(async (req) => {
     const js = `(function(){
   // Prevent the whole IIFE from running twice when WordPress/Elementor injects the script
   // multiple times (would otherwise throw NotSupportedError on customElements.define)
-  if (window.__VPLAY_LOADED__) {
+  if (window.__VPLAY_SMARTPLAYER_CLASS__) {
     // Still seed config for this video so the already-defined element can render it
     window.__VPLAY_CONFIGS = window.__VPLAY_CONFIGS || {};
     var _seed = ${JSON.stringify(initialConfig)};
     for (var _k in _seed) { if (!window.__VPLAY_CONFIGS[_k]) window.__VPLAY_CONFIGS[_k] = _seed[_k]; }
+    ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
+      try { if (!customElements.get(tag)) customElements.define(tag, window.__VPLAY_SMARTPLAYER_CLASS__); } catch(e){}
+    });
     return;
   }
-  window.__VPLAY_LOADED__ = true;
   var SUPA_URL = ${JSON.stringify(supabaseUrl)};
   var SUPA_KEY = ${JSON.stringify(Deno.env.get("SUPABASE_ANON_KEY") ?? "")};
   var FN_BASE = SUPA_URL + "/functions/v1/player-embed/";

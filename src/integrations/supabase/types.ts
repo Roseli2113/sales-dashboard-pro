@@ -377,6 +377,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      video_exists: { Args: { _video_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

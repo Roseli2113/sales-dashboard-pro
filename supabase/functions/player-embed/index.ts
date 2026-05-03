@@ -124,9 +124,13 @@ Deno.serve(async (req) => {
       var host = this;
       host.style.display = "block";
       host.style.width = host.style.width || "100%";
-      // Isolate stacking context so neighboring Elementor containers/buttons can't overlap the player
-      host.style.position = host.style.position || "relative";
-      host.style.zIndex = host.style.zIndex || "1";
+      host.style.height = "auto";
+      host.style.overflow = "visible";
+      host.style.contain = "layout style";
+      host.style.clear = host.style.clear || "both";
+      // Keep the player in normal page flow so it never overlays or hides Elementor containers below it
+      host.style.position = "relative";
+      host.style.zIndex = "auto";
       host.style.isolation = "isolate";
 
       var wrap = document.createElement("div");
@@ -138,7 +142,7 @@ Deno.serve(async (req) => {
         return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
       }
       var initialPad = explicitAspect === "16:9" ? "56.25%" : explicitAspect === "9:16" ? "177.78%" : (responsive && isDesktopViewport() ? "56.25%" : "177.78%");
-      wrap.style.cssText = "position:relative;width:100%;padding-bottom:" + initialPad + ";background:#000;border-radius:12px;overflow:hidden;cursor:pointer;";
+      wrap.style.cssText = "display:block;position:relative;width:100%;height:0;padding:0 0 " + initialPad + " 0;margin:0 auto;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;clear:both;box-sizing:border-box;contain:layout paint;z-index:0;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -174,7 +178,9 @@ Deno.serve(async (req) => {
         video.style.objectPosition = "center center";
       }
       video.addEventListener("loadedmetadata", applyAspect);
-      window.addEventListener("resize", applyAspect);
+      var resizeTimer;
+      function onResize(){ clearTimeout(resizeTimer); resizeTimer = setTimeout(applyAspect, 80); }
+      window.addEventListener("resize", onResize);
 
       // Unmute overlay (VSL style)
       var unmuteOverlay = document.createElement("div");

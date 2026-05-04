@@ -126,12 +126,17 @@ Deno.serve(async (req) => {
       host.style.width = host.style.width || "100%";
       host.style.height = "auto";
       host.style.overflow = "visible";
-      host.style.contain = "layout style";
       host.style.clear = host.style.clear || "both";
       // Keep the player in normal page flow so it never overlays or hides Elementor containers below it
       host.style.position = "relative";
       host.style.zIndex = "auto";
-      host.style.isolation = "isolate";
+      // Establish a new block formatting context so sibling containers (Elementor buttons) cannot overlap us
+      host.style.display = "flow-root";
+      host.style.float = "none";
+      host.style.transform = "none";
+      host.style.willChange = "auto";
+      host.style.contain = "none";
+      host.style.isolation = "auto";
 
       var wrap = document.createElement("div");
       // In responsive mode desktop must stay 16:9 (YouTube-like/full-width) and crop the source if needed,
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
         return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
       }
       var initialPad = explicitAspect === "16:9" ? "56.25%" : explicitAspect === "9:16" ? "177.78%" : (responsive && isDesktopViewport() ? "56.25%" : "177.78%");
-      wrap.style.cssText = "display:block;position:relative;width:100%;height:0;padding:0 0 " + initialPad + " 0;margin:0 auto;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;clear:both;box-sizing:border-box;contain:layout paint;z-index:0;";
+      wrap.style.cssText = "display:block;position:relative;width:100%;height:0;padding:0 0 " + initialPad + " 0;margin:0 auto;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;clear:both;box-sizing:border-box;z-index:0;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;

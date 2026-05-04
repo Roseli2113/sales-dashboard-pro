@@ -135,15 +135,21 @@ Deno.serve(async (req) => {
         : explicitAspect === "9:16" ? "9 / 16"
         : (responsive && isDesktopViewport() ? "16 / 9" : "9 / 16");
 
-      // Host: normal block in page flow with reserved aspect-ratio so siblings cannot overlap
+      function aspectToPadding(ratio) {
+        return ratio === "16 / 9" ? "56.25%" : "177.7778%";
+      }
+
+      // Host stays as a normal block. The real space is reserved by an inner
+      // padding spacer, because Elementor mobile can ignore aspect-ratio on
+      // unknown custom elements and then pull the next container over the video.
       host.style.display = "block";
       host.style.position = "relative";
       host.style.width = host.style.width || "100%";
-      host.style.aspectRatio = aspectRatio;
       host.style.height = "auto";
-      host.style.overflow = "hidden";
-      host.style.background = "#000";
-      host.style.borderRadius = "12px";
+      host.style.minHeight = "0";
+      host.style.overflow = "visible";
+      host.style.background = "transparent";
+      host.style.borderRadius = "0";
       host.style.zIndex = "auto";
       host.style.float = "none";
       host.style.clear = "both";
@@ -152,7 +158,7 @@ Deno.serve(async (req) => {
       host.style.isolation = "auto";
 
       var wrap = document.createElement("div");
-      wrap.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;overflow:hidden;cursor:pointer;box-sizing:border-box;";
+      wrap.style.cssText = "position:relative;display:block;width:100%;height:0;padding-top:" + aspectToPadding(aspectRatio) + ";background:#000;overflow:hidden;cursor:pointer;box-sizing:border-box;border-radius:12px;clear:both;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -172,17 +178,17 @@ Deno.serve(async (req) => {
 
       function applyAspect() {
         if (explicitAspect) {
-          host.style.aspectRatio = explicitAspect === "16:9" ? "16 / 9" : "9 / 16";
+          wrap.style.paddingTop = explicitAspect === "16:9" ? "56.25%" : "177.7778%";
           return;
         }
         if (responsive && isDesktopViewport()) {
-          host.style.aspectRatio = "16 / 9";
+          wrap.style.paddingTop = "56.25%";
           video.style.objectFit = "cover";
           video.style.objectPosition = "center top";
           return;
         }
         if (!video.videoWidth || !video.videoHeight) return;
-        host.style.aspectRatio = video.videoWidth + " / " + video.videoHeight;
+        wrap.style.paddingTop = ((video.videoHeight / video.videoWidth) * 100) + "%";
         video.style.objectFit = "cover";
         video.style.objectPosition = "center center";
       }

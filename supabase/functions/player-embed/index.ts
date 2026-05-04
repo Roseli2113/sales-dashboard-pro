@@ -71,7 +71,11 @@ Deno.serve(async (req) => {
     var _seed = ${JSON.stringify(initialConfig)};
     for (var _k in _seed) { if (!window.__VPLAY_CONFIGS[_k]) window.__VPLAY_CONFIGS[_k] = _seed[_k]; }
     ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
-      try { if (!customElements.get(tag)) customElements.define(tag, window.__VPLAY_SMARTPLAYER_CLASS__); } catch(e){}
+      try {
+        if (!customElements.get(tag)) {
+          customElements.define(tag, class extends window.__VPLAY_SMARTPLAYER_CLASS__ {});
+        }
+      } catch(e){}
     });
     return;
   }
@@ -288,7 +292,11 @@ Deno.serve(async (req) => {
 
   window.__VPLAY_SMARTPLAYER_CLASS__ = VPlaySmartPlayer;
   ["vplay-smartplayer", "vplay-smartplayer-v2", "vplay-smartplayer-v3"].forEach(function(tag){
-    try { if (!customElements.get(tag)) customElements.define(tag, VPlaySmartPlayer); } catch(e){}
+    try {
+      if (!customElements.get(tag)) {
+        customElements.define(tag, class extends VPlaySmartPlayer {});
+      }
+    } catch(e){}
   });
 })();`;
 

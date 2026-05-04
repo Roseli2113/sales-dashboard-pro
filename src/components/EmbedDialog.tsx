@@ -17,7 +17,7 @@ export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
 
   const playerId = `vid-${videoId}`;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260504-v3-register-fix`;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260504-elementor-mobile-spacer`;
   const playerTag = "vplay-smartplayer-v3";
 
   const desktopCode = `<${playerTag} id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block; margin: 0 auto; width: 100%; max-width: 960px;"></${playerTag}>

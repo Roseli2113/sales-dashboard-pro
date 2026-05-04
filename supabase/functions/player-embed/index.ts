@@ -122,32 +122,33 @@ Deno.serve(async (req) => {
     _render(VIDEO_ID, VIDEO_URL, AUTOPLAY) {
       // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
       var host = this;
+      var responsive = host.getAttribute("data-responsive") === "true";
+      var explicitAspect = host.getAttribute("data-aspect"); // "16:9" or "9:16"
+      function isDesktopViewport() {
+        return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
+      }
+      var aspectRatio = explicitAspect === "16:9" ? "16 / 9"
+        : explicitAspect === "9:16" ? "9 / 16"
+        : (responsive && isDesktopViewport() ? "16 / 9" : "9 / 16");
+
+      // Host: normal block in page flow with reserved aspect-ratio so siblings cannot overlap
       host.style.display = "block";
-      host.style.width = host.style.width || "100%";
-      host.style.height = "auto";
-      host.style.overflow = "visible";
-      host.style.clear = host.style.clear || "both";
-      // Keep the player in normal page flow so it never overlays or hides Elementor containers below it
       host.style.position = "relative";
+      host.style.width = host.style.width || "100%";
+      host.style.aspectRatio = aspectRatio;
+      host.style.height = "auto";
+      host.style.overflow = "hidden";
+      host.style.background = "#000";
+      host.style.borderRadius = "12px";
       host.style.zIndex = "auto";
-      // Establish a new block formatting context so sibling containers (Elementor buttons) cannot overlap us
-      host.style.display = "flow-root";
       host.style.float = "none";
+      host.style.clear = "both";
       host.style.transform = "none";
-      host.style.willChange = "auto";
       host.style.contain = "none";
       host.style.isolation = "auto";
 
       var wrap = document.createElement("div");
-      // In responsive mode desktop must stay 16:9 (YouTube-like/full-width) and crop the source if needed,
-      // otherwise vertical source videos create huge black areas inside Elementor pages.
-      var responsive = host.getAttribute("data-responsive") === "true";
-      var explicitAspect = host.getAttribute("data-aspect"); // e.g. "16:9" or "9:16"
-      function isDesktopViewport() {
-        return !window.matchMedia || window.matchMedia("(min-width: 768px)").matches;
-      }
-      var initialPad = explicitAspect === "16:9" ? "56.25%" : explicitAspect === "9:16" ? "177.78%" : (responsive && isDesktopViewport() ? "56.25%" : "177.78%");
-      wrap.style.cssText = "display:block;position:relative;width:100%;height:0;padding:0 0 " + initialPad + " 0;margin:0 auto;background:#000;border-radius:12px;overflow:hidden;cursor:pointer;clear:both;box-sizing:border-box;z-index:0;";
+      wrap.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;overflow:hidden;cursor:pointer;box-sizing:border-box;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -167,18 +168,17 @@ Deno.serve(async (req) => {
 
       function applyAspect() {
         if (explicitAspect) {
-          wrap.style.paddingBottom = explicitAspect === "16:9" ? "56.25%" : "177.78%";
+          host.style.aspectRatio = explicitAspect === "16:9" ? "16 / 9" : "9 / 16";
           return;
         }
         if (responsive && isDesktopViewport()) {
-          wrap.style.paddingBottom = "56.25%";
+          host.style.aspectRatio = "16 / 9";
           video.style.objectFit = "cover";
           video.style.objectPosition = "center top";
           return;
         }
         if (!video.videoWidth || !video.videoHeight) return;
-        var ratio = video.videoHeight / video.videoWidth;
-        wrap.style.paddingBottom = (ratio * 100).toFixed(2) + "%";
+        host.style.aspectRatio = video.videoWidth + " / " + video.videoHeight;
         video.style.objectFit = "cover";
         video.style.objectPosition = "center center";
       }

@@ -513,16 +513,25 @@ function AutoplayEditorSidebar({
             </button>
           </div>
 
-          <div className="mt-3 rounded-md border bg-primary/10 p-3 text-center">
-            <div className="mx-auto mb-2 inline-flex flex-col items-center gap-1 rounded bg-foreground/80 px-3 py-2 text-primary-foreground">
-              <span className="text-[10px]">Seu vídeo já começou</span>
-              <Volume2 className="h-4 w-4" />
-              <span className="text-[10px]">Clique para ouvir</span>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="mt-2 w-full">
-            Escolher outro template
-          </Button>
+          {autoplay.layout === "template" ? (
+            <>
+              <div className="mt-3 rounded-md border bg-primary/10 p-3 text-center">
+                <div className="mx-auto mb-2 inline-flex flex-col items-center gap-1 rounded bg-foreground/80 px-3 py-2 text-primary-foreground">
+                  <span className="text-[10px]">Seu vídeo já começou</span>
+                  <Volume2 className="h-4 w-4" />
+                  <span className="text-[10px]">Clique para ouvir</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="mt-2 w-full">
+                Escolher outro template
+              </Button>
+            </>
+          ) : (
+            <CustomUploader
+              imageUrl={autoplay.customImageUrl ?? ""}
+              onChange={(url) => onChange({ customImageUrl: url })}
+            />
+          )}
         </div>
 
         <div className="flex items-center justify-between">

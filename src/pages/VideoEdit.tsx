@@ -41,6 +41,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 type Setting = {
   key: string;
@@ -71,6 +72,7 @@ type Autoplay = {
   bottomText: string;
   startSec: number;
   endSec: number;
+  customImageUrl?: string;
 };
 
 const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
@@ -85,6 +87,7 @@ const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
   bottomText: "Clique para ouvir",
   startSec: 0,
   endSec: 1939,
+  customImageUrl: "",
 });
 
 function normalizeAutoplays(raw: unknown): Autoplay[] {
@@ -300,21 +303,31 @@ export default function VideoEdit() {
                 <PlayIcon className="h-16 w-16 text-primary-foreground/40" />
               )}
               {(active === "smart_autoplay" || editing) && (
-                <div
-                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-lg px-4 py-3 text-center ${
-                    editing?.pulse ? "animate-pulse" : ""
-                  }`}
-                  style={{
-                    backgroundColor: previewAutoplay.bgColor,
-                    color: previewAutoplay.textColor,
-                  }}
-                >
-                  <span className="text-xs font-semibold">
-                    {previewAutoplay.topText}
-                  </span>
-                  <Volume2 className="h-6 w-6" />
-                  <span className="text-xs">{previewAutoplay.bottomText}</span>
-                </div>
+                previewAutoplay.layout === "personalizado" && previewAutoplay.customImageUrl ? (
+                  <img
+                    src={previewAutoplay.customImageUrl}
+                    alt="Autoplay personalizado"
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[60%] max-w-[80%] rounded-lg object-contain ${
+                      previewAutoplay.pulse ? "animate-pulse" : ""
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-lg px-4 py-3 text-center ${
+                      previewAutoplay.pulse ? "animate-pulse" : ""
+                    }`}
+                    style={{
+                      backgroundColor: previewAutoplay.bgColor,
+                      color: previewAutoplay.textColor,
+                    }}
+                  >
+                    <span className="text-xs font-semibold">
+                      {previewAutoplay.topText}
+                    </span>
+                    <Volume2 className="h-6 w-6" />
+                    <span className="text-xs">{previewAutoplay.bottomText}</span>
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -501,16 +514,25 @@ function AutoplayEditorSidebar({
             </button>
           </div>
 
-          <div className="mt-3 rounded-md border bg-primary/10 p-3 text-center">
-            <div className="mx-auto mb-2 inline-flex flex-col items-center gap-1 rounded bg-foreground/80 px-3 py-2 text-primary-foreground">
-              <span className="text-[10px]">Seu vídeo já começou</span>
-              <Volume2 className="h-4 w-4" />
-              <span className="text-[10px]">Clique para ouvir</span>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="mt-2 w-full">
-            Escolher outro template
-          </Button>
+          {autoplay.layout === "template" ? (
+            <>
+              <div className="mt-3 rounded-md border bg-primary/10 p-3 text-center">
+                <div className="mx-auto mb-2 inline-flex flex-col items-center gap-1 rounded bg-foreground/80 px-3 py-2 text-primary-foreground">
+                  <span className="text-[10px]">Seu vídeo já começou</span>
+                  <Volume2 className="h-4 w-4" />
+                  <span className="text-[10px]">Clique para ouvir</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="mt-2 w-full">
+                Escolher outro template
+              </Button>
+            </>
+          ) : (
+            <CustomUploader
+              imageUrl={autoplay.customImageUrl ?? ""}
+              onChange={(url) => onChange({ customImageUrl: url })}
+            />
+          )}
         </div>
 
         <div className="flex items-center justify-between">
@@ -632,6 +654,101 @@ function AutoplayEditorSidebar({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============ Custom uploader for personalizado layout ============
+function CustomUploader({
+  imageUrl,
+  onChange,
+}: {
+  imageUrl: string;
+  onChange: (url: string) => void;
+}) {
+  const { user } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    if (!user) {
+      toast({ title: "Faça login para enviar arquivos", variant: "destructive" });
+      return;
+    }
+    if (!/^image\/(png|jpeg|jpg|gif|webp)$/i.test(file.type)) {
+      toast({ title: "Formato inválido", description: "Use PNG, JPG, GIF ou WEBP.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Máximo 5 MB.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split(".").pop() ?? "png";
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("autoplay-assets").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+    if (error) {
+      toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+    const { data } = supabase.storage.from("autoplay-assets").getPublicUrl(path);
+    onChange(data.publicUrl);
+    setUploading(false);
+    toast({ title: "Imagem enviada" });
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
+      {imageUrl ? (
+        <div className="rounded-md border bg-primary/10 p-3 text-center">
+          <img src={imageUrl} alt="Preview" className="mx-auto max-h-28 rounded object-contain" />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border bg-secondary/30 p-4 text-center text-xs text-muted-foreground hover:bg-secondary/60 transition-colors"
+        >
+          <Upload className="h-5 w-5 text-muted-foreground" />
+          <span>Clique para enviar imagem ou GIF</span>
+          <span className="text-[10px]">PNG, JPG, GIF ou WEBP até 5 MB</span>
+        </button>
+      )}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+      >
+        {uploading ? "Enviando..." : imageUrl ? "Trocar imagem" : "Selecionar do computador"}
+      </Button>
+      {imageUrl && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-destructive hover:text-destructive"
+          onClick={() => onChange("")}
+        >
+          Remover imagem
+        </Button>
+      )}
     </div>
   );
 }

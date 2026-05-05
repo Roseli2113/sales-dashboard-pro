@@ -155,7 +155,9 @@ Deno.serve(async (req) => {
       host.style.removeProperty("padding-top");
       host.style.removeProperty("padding-bottom");
 
-      var wrap = document.createElement("div");
+      var existingSpacer = host.querySelector(".vplay-elementor-spacer");
+      var wrap = existingSpacer || document.createElement("div");
+      wrap.className = "vplay-elementor-spacer";
       wrap.style.cssText = "position:relative!important;display:block!important;width:100%!important;height:auto!important;background:#000!important;overflow:hidden!important;cursor:pointer!important;box-sizing:border-box!important;border-radius:12px!important;clear:both!important;z-index:0!important;";
 
       var video = document.createElement("video");

@@ -135,30 +135,30 @@ Deno.serve(async (req) => {
         : explicitAspect === "9:16" ? "9 / 16"
         : (responsive && isDesktopViewport() ? "16 / 9" : "9 / 16");
 
-      function aspectToPadding(ratio) {
-        return ratio === "16 / 9" ? "56.25%" : "177.7778%";
-      }
+      // Host stays as a normal block in the page flow. Use !important for the
+      // layout-critical properties because Elementor themes/plugins sometimes
+      // ship broad mobile rules that override custom elements.
+      host.style.setProperty("display", "block", "important");
+      host.style.setProperty("position", "relative", "important");
+      host.style.setProperty("width", host.style.width || "100%", "important");
+      host.style.setProperty("height", "auto", "important");
+      host.style.setProperty("min-height", "0", "important");
+      host.style.setProperty("overflow", "visible", "important");
+      host.style.setProperty("background", "transparent", "important");
+      host.style.setProperty("border-radius", "0", "important");
+      host.style.setProperty("z-index", "0", "important");
+      host.style.setProperty("float", "none", "important");
+      host.style.setProperty("clear", "both", "important");
+      host.style.setProperty("transform", "none", "important");
+      host.style.setProperty("contain", "none", "important");
+      host.style.setProperty("isolation", "auto", "important");
+      host.style.removeProperty("padding-top");
+      host.style.removeProperty("padding-bottom");
 
-      // Host stays as a normal block. The real space is reserved by an inner
-      // padding spacer, because Elementor mobile can ignore aspect-ratio on
-      // unknown custom elements and then pull the next container over the video.
-      host.style.display = "block";
-      host.style.position = "relative";
-      host.style.width = host.style.width || "100%";
-      host.style.height = "auto";
-      host.style.minHeight = "0";
-      host.style.overflow = "visible";
-      host.style.background = "transparent";
-      host.style.borderRadius = "0";
-      host.style.zIndex = "auto";
-      host.style.float = "none";
-      host.style.clear = "both";
-      host.style.transform = "none";
-      host.style.contain = "none";
-      host.style.isolation = "auto";
-
-      var wrap = document.createElement("div");
-      wrap.style.cssText = "position:relative;display:block;width:100%;height:0;padding-top:" + aspectToPadding(aspectRatio) + ";background:#000;overflow:hidden;cursor:pointer;box-sizing:border-box;border-radius:12px;clear:both;";
+      var existingSpacer = host.querySelector(".vplay-elementor-spacer");
+      var wrap = existingSpacer || document.createElement("div");
+      wrap.className = "vplay-elementor-spacer";
+      wrap.style.cssText = "position:relative!important;display:block!important;width:100%!important;height:auto!important;background:#000!important;overflow:hidden!important;cursor:pointer!important;box-sizing:border-box!important;border-radius:12px!important;clear:both!important;z-index:0!important;";
 
       var video = document.createElement("video");
       video.src = VIDEO_URL;
@@ -172,25 +172,27 @@ Deno.serve(async (req) => {
       video.autoplay = true;
       video.setAttribute("muted", "");
       video.setAttribute("autoplay", "");
-      video.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;background:#000;display:block;";
+      video.style.cssText = "position:relative!important;display:block!important;width:100%!important;max-width:100%!important;height:auto!important;aspect-ratio:" + aspectRatio + "!important;object-fit:cover!important;object-position:center top!important;background:#000!important;margin:0!important;float:none!important;clear:both!important;z-index:0!important;";
 
       wrap.appendChild(video);
 
       function applyAspect() {
         if (explicitAspect) {
-          wrap.style.paddingTop = explicitAspect === "16:9" ? "56.25%" : "177.7778%";
+          video.style.setProperty("aspect-ratio", explicitAspect === "16:9" ? "16 / 9" : "9 / 16", "important");
+          video.style.setProperty("object-fit", "cover", "important");
+          video.style.setProperty("object-position", "center top", "important");
           return;
         }
         if (responsive && isDesktopViewport()) {
-          wrap.style.paddingTop = "56.25%";
-          video.style.objectFit = "cover";
-          video.style.objectPosition = "center top";
+          video.style.setProperty("aspect-ratio", "16 / 9", "important");
+          video.style.setProperty("object-fit", "cover", "important");
+          video.style.setProperty("object-position", "center top", "important");
           return;
         }
         if (!video.videoWidth || !video.videoHeight) return;
-        wrap.style.paddingTop = ((video.videoHeight / video.videoWidth) * 100) + "%";
-        video.style.objectFit = "cover";
-        video.style.objectPosition = "center center";
+        video.style.setProperty("aspect-ratio", video.videoWidth + " / " + video.videoHeight, "important");
+        video.style.setProperty("object-fit", "cover", "important");
+        video.style.setProperty("object-position", "center center", "important");
       }
       video.addEventListener("loadedmetadata", applyAspect);
       var resizeTimer;

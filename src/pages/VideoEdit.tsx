@@ -41,6 +41,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 type Setting = {
   key: string;

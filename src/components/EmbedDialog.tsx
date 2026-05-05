@@ -17,10 +17,12 @@ export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
 
   const playerId = `vid-${videoId}`;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260504-elementor-mobile-spacer`;
+  const playerScriptUrl = `${supabaseUrl}/functions/v1/player-embed/${videoId}.js?v=20260505-elementor-hard-spacer`;
   const playerTag = "vplay-smartplayer-v3";
 
-  const desktopCode = `<${playerTag} id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block; margin: 0 auto; width: 100%; max-width: 960px;"></${playerTag}>
+  const desktopCode = `<${playerTag} id="${playerId}-desktop" data-video-id="${videoId}" data-aspect="16:9" style="display: block !important; clear: both !important; float: none !important; position: relative !important; z-index: 0 !important; margin: 0 auto 24px auto !important; width: 100% !important; max-width: 960px !important; height: auto !important; overflow: visible !important;">
+  <div class="vplay-elementor-spacer" aria-hidden="true" style="display:block!important;position:relative!important;width:100%!important;height:0!important;padding-top:56.25%!important;background:#000!important;border-radius:12px!important;overflow:hidden!important;clear:both!important;"></div>
+</${playerTag}>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";
@@ -33,7 +35,9 @@ export function EmbedDialog({ open, onOpenChange, videoId }: EmbedDialogProps) {
   })();
 </script>`;
 
-  const mobileCode = `<${playerTag} id="${playerId}-mobile" data-video-id="${videoId}" data-aspect="9:16" style="display: block; margin: 0 auto; width: 100%; max-width: 420px;"></${playerTag}>
+  const mobileCode = `<${playerTag} id="${playerId}-mobile" data-video-id="${videoId}" data-aspect="9:16" style="display: block !important; clear: both !important; float: none !important; position: relative !important; z-index: 0 !important; margin: 0 auto 24px auto !important; width: 100% !important; max-width: 420px !important; height: auto !important; overflow: visible !important;">
+  <div class="vplay-elementor-spacer" aria-hidden="true" style="display:block!important;position:relative!important;width:100%!important;height:0!important;padding-top:177.7778%!important;background:#000!important;border-radius:12px!important;overflow:hidden!important;clear:both!important;"></div>
+</${playerTag}>
 <script type="text/javascript">
   (function(){
     var SRC = "${playerScriptUrl}";

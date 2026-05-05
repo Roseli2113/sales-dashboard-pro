@@ -71,6 +71,7 @@ type Autoplay = {
   bottomText: string;
   startSec: number;
   endSec: number;
+  customImageUrl?: string;
 };
 
 const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
@@ -85,6 +86,7 @@ const defaultAutoplay = (name = "Smart Autoplay"): Autoplay => ({
   bottomText: "Clique para ouvir",
   startSec: 0,
   endSec: 1939,
+  customImageUrl: "",
 });
 
 function normalizeAutoplays(raw: unknown): Autoplay[] {

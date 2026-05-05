@@ -176,19 +176,21 @@ Deno.serve(async (req) => {
 
       function applyAspect() {
         if (explicitAspect) {
-          wrap.style.paddingTop = explicitAspect === "16:9" ? "56.25%" : "177.7778%";
+          video.style.setProperty("aspect-ratio", explicitAspect === "16:9" ? "16 / 9" : "9 / 16", "important");
+          video.style.setProperty("object-fit", "cover", "important");
+          video.style.setProperty("object-position", "center top", "important");
           return;
         }
         if (responsive && isDesktopViewport()) {
-          wrap.style.paddingTop = "56.25%";
-          video.style.objectFit = "cover";
-          video.style.objectPosition = "center top";
+          video.style.setProperty("aspect-ratio", "16 / 9", "important");
+          video.style.setProperty("object-fit", "cover", "important");
+          video.style.setProperty("object-position", "center top", "important");
           return;
         }
         if (!video.videoWidth || !video.videoHeight) return;
-        wrap.style.paddingTop = ((video.videoHeight / video.videoWidth) * 100) + "%";
-        video.style.objectFit = "cover";
-        video.style.objectPosition = "center center";
+        video.style.setProperty("aspect-ratio", video.videoWidth + " / " + video.videoHeight, "important");
+        video.style.setProperty("object-fit", "cover", "important");
+        video.style.setProperty("object-position", "center center", "important");
       }
       video.addEventListener("loadedmetadata", applyAspect);
       var resizeTimer;

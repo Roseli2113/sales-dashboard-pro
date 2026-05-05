@@ -302,21 +302,31 @@ export default function VideoEdit() {
                 <PlayIcon className="h-16 w-16 text-primary-foreground/40" />
               )}
               {(active === "smart_autoplay" || editing) && (
-                <div
-                  className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-lg px-4 py-3 text-center ${
-                    editing?.pulse ? "animate-pulse" : ""
-                  }`}
-                  style={{
-                    backgroundColor: previewAutoplay.bgColor,
-                    color: previewAutoplay.textColor,
-                  }}
-                >
-                  <span className="text-xs font-semibold">
-                    {previewAutoplay.topText}
-                  </span>
-                  <Volume2 className="h-6 w-6" />
-                  <span className="text-xs">{previewAutoplay.bottomText}</span>
-                </div>
+                previewAutoplay.layout === "personalizado" && previewAutoplay.customImageUrl ? (
+                  <img
+                    src={previewAutoplay.customImageUrl}
+                    alt="Autoplay personalizado"
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[60%] max-w-[80%] rounded-lg object-contain ${
+                      previewAutoplay.pulse ? "animate-pulse" : ""
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 rounded-lg px-4 py-3 text-center ${
+                      previewAutoplay.pulse ? "animate-pulse" : ""
+                    }`}
+                    style={{
+                      backgroundColor: previewAutoplay.bgColor,
+                      color: previewAutoplay.textColor,
+                    }}
+                  >
+                    <span className="text-xs font-semibold">
+                      {previewAutoplay.topText}
+                    </span>
+                    <Volume2 className="h-6 w-6" />
+                    <span className="text-xs">{previewAutoplay.bottomText}</span>
+                  </div>
+                )
               )}
             </div>
           </div>

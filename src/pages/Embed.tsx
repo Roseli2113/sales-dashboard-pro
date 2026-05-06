@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRetentionTracking } from "@/lib/retention";
+import { useVideoEventTracking } from "@/lib/tracking";
 
 export default function Embed() {
   const { id } = useParams();
@@ -9,6 +10,7 @@ export default function Embed() {
   const [notFound, setNotFound] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
   useRetentionTracking(ref, id);
+  useVideoEventTracking(ref, id);
 
   useEffect(() => {
     if (!id) return;

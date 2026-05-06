@@ -295,6 +295,51 @@ Deno.serve(async (req) => {
         setInterval(flush, 2000);
         window.addEventListener("beforeunload", flush);
       } catch(e) { /* ignore tracking errors */ }
+
+      // Engagement event tracking (view, play, pause, complete)
+      try {
+        var SUPA_URL2 = ${JSON.stringify(supabaseUrl)};
+        var SUPA_KEY2 = ${JSON.stringify(Deno.env.get("SUPABASE_ANON_KEY") ?? "")};
+        var sessionId2 = (window.__VPLAY_SESSION_ID = window.__VPLAY_SESSION_ID || ((crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random()));
+        var fired = { view: false, play: false, complete: false };
+        function sendEvt(type, ct) {
+          if (!SUPA_KEY2) return;
+          fetch(SUPA_URL2 + "/rest/v1/video_events", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SUPA_KEY2,
+              "Authorization": "Bearer " + SUPA_KEY2,
+              "Prefer": "return=minimal",
+            },
+            body: JSON.stringify([{
+              video_id: VIDEO_ID,
+              session_id: sessionId2,
+              event_type: type,
+              current_time_seconds: Math.max(0, Math.floor(ct || 0)),
+              duration_seconds: Math.max(0, Math.floor(video.duration || 0)),
+            }]),
+          }).catch(function(){});
+        }
+        if (!fired.view) { fired.view = true; sendEvt("view", 0); }
+        video.addEventListener("play", function(){
+          if (!fired.play) { fired.play = true; sendEvt("play", video.currentTime); }
+        });
+        video.addEventListener("pause", function(){
+          if (video.ended) return;
+          sendEvt("pause", video.currentTime);
+        });
+        video.addEventListener("timeupdate", function(){
+          if (fired.complete) return;
+          if (video.duration && (video.currentTime / video.duration) >= 0.95) {
+            fired.complete = true;
+            sendEvt("complete", video.currentTime);
+          }
+        });
+        video.addEventListener("ended", function(){
+          if (!fired.complete) { fired.complete = true; sendEvt("complete", video.currentTime); }
+        });
+      } catch(e) { /* ignore tracking errors */ }
     }
   }
 

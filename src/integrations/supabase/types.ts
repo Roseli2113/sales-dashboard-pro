@@ -211,29 +211,44 @@ export type Database = {
       }
       video_events: {
         Row: {
+          browser: string | null
+          country: string | null
           created_at: string
           current_time_seconds: number
+          device: string | null
           duration_seconds: number
           event_type: string
           id: string
+          os: string | null
+          referrer: string | null
           session_id: string
           video_id: string
         }
         Insert: {
+          browser?: string | null
+          country?: string | null
           created_at?: string
           current_time_seconds?: number
+          device?: string | null
           duration_seconds?: number
           event_type: string
           id?: string
+          os?: string | null
+          referrer?: string | null
           session_id: string
           video_id: string
         }
         Update: {
+          browser?: string | null
+          country?: string | null
           created_at?: string
           current_time_seconds?: number
+          device?: string | null
           duration_seconds?: number
           event_type?: string
           id?: string
+          os?: string | null
+          referrer?: string | null
           session_id?: string
           video_id?: string
         }

@@ -13,6 +13,33 @@ function getSessionId(): string {
   return id;
 }
 
+function detectContext() {
+  const ua = navigator.userAgent || "";
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+  const isTablet = /iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua));
+  const device = isTablet ? "Tablet" : isMobile ? "Mobile" : "Desktop";
+  let os = "Outro";
+  if (/Windows/i.test(ua)) os = "Windows";
+  else if (/Mac OS X|Macintosh/i.test(ua)) os = "macOS";
+  else if (/Android/i.test(ua)) os = "Android";
+  else if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+  else if (/Linux/i.test(ua)) os = "Linux";
+  let browser = "Outro";
+  if (/Edg\//i.test(ua)) browser = "Edge";
+  else if (/OPR\/|Opera/i.test(ua)) browser = "Opera";
+  else if (/Chrome\//i.test(ua) && !/Edg\//i.test(ua)) browser = "Chrome";
+  else if (/Firefox\//i.test(ua)) browser = "Firefox";
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = "Safari";
+  let referrer = "Direto";
+  try {
+    const r = document.referrer;
+    if (r) referrer = new URL(r).hostname;
+  } catch { /* ignore */ }
+  const lang = (navigator.language || "").toUpperCase();
+  const country = lang.includes("-") ? lang.split("-")[1] : (lang || "BR");
+  return { device, os, browser, referrer, country };
+}
+
 async function sendEvent(
   videoId: string,
   sessionId: string,
@@ -20,12 +47,18 @@ async function sendEvent(
   currentTime: number,
   duration: number,
 ) {
+  const ctx = detectContext();
   await supabase.from("video_events").insert({
     video_id: videoId,
     session_id: sessionId,
     event_type: eventType,
     current_time_seconds: Math.max(0, Math.floor(currentTime || 0)),
     duration_seconds: Math.max(0, Math.floor(duration || 0)),
+    country: ctx.country,
+    device: ctx.device,
+    os: ctx.os,
+    browser: ctx.browser,
+    referrer: ctx.referrer,
   });
 }
 

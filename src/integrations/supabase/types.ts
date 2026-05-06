@@ -209,6 +209,36 @@ export type Database = {
         }
         Relationships: []
       }
+      video_events: {
+        Row: {
+          created_at: string
+          current_time_seconds: number
+          duration_seconds: number
+          event_type: string
+          id: string
+          session_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_time_seconds?: number
+          duration_seconds?: number
+          event_type: string
+          id?: string
+          session_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          current_time_seconds?: number
+          duration_seconds?: number
+          event_type?: string
+          id?: string
+          session_id?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       video_metrics: {
         Row: {
           button_clicks: number | null
@@ -370,6 +400,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aggregate_video_metrics: {
+        Args: { _date: string; _video_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

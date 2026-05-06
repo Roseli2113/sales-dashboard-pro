@@ -35,6 +35,8 @@ const sideMenu = [
 
 const tabs = ["Retenção Geral", "Países", "Dispositivos", "Sistema Operacional", "Navegadores", "Origem do Tráfego"];
 
+type Breakdown = { label: string; count: number; pct: number };
+
 export default function VideoAnalytics() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -44,6 +46,9 @@ export default function VideoAnalytics() {
   const [editingPitch, setEditingPitch] = useState(false);
   const [pitchInput, setPitchInput] = useState("0:00");
   const [activeTab, setActiveTab] = useState(0);
+  const [breakdowns, setBreakdowns] = useState<{
+    country: Breakdown[]; device: Breakdown[]; os: Breakdown[]; browser: Breakdown[]; referrer: Breakdown[];
+  }>({ country: [], device: [], os: [], browser: [], referrer: [] });
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +65,41 @@ export default function VideoAnalytics() {
         setRetentionData(curve);
       }
       if (mRes.data) setMetrics(mRes.data);
+
+      const { data: events } = await supabase
+        .from("video_events")
+        .select("session_id,country,device,os,browser,referrer")
+        .eq("video_id", id)
+        .eq("event_type", "view");
+      if (events) {
+        const seen: Record<string, Set<string>> = { country: new Set(), device: new Set(), os: new Set(), browser: new Set(), referrer: new Set() };
+        const counts: Record<string, Map<string, number>> = { country: new Map(), device: new Map(), os: new Map(), browser: new Map(), referrer: new Map() };
+        const totals: Record<string, number> = { country: 0, device: 0, os: 0, browser: 0, referrer: 0 };
+        for (const e of events) {
+          for (const key of ["country", "device", "os", "browser", "referrer"] as const) {
+            const val = (e as Record<string, unknown>)[key] as string | null;
+            const dedupeKey = `${e.session_id}|${val ?? "—"}`;
+            if (seen[key].has(dedupeKey)) continue;
+            seen[key].add(dedupeKey);
+            const label = val && val.length ? val : "Desconhecido";
+            counts[key].set(label, (counts[key].get(label) ?? 0) + 1);
+            totals[key]++;
+          }
+        }
+        const build = (key: string): Breakdown[] => {
+          const total = totals[key] || 1;
+          return Array.from(counts[key].entries())
+            .map(([label, count]) => ({ label, count, pct: (count / total) * 100 }))
+            .sort((a, b) => b.count - a.count);
+        };
+        setBreakdowns({
+          country: build("country"),
+          device: build("device"),
+          os: build("os"),
+          browser: build("browser"),
+          referrer: build("referrer"),
+        });
+      }
     };
     load();
   }, [id]);
@@ -248,12 +288,44 @@ export default function VideoAnalytics() {
             </p>
           </div>
           ) : (
-            <div className="mt-6 rounded-lg border bg-card p-10 text-center">
-              <h3 className="text-lg font-semibold text-foreground">{tabs[activeTab]}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Sem dados ainda. As estatísticas de <span className="font-medium">{tabs[activeTab].toLowerCase()}</span> aparecerão aqui assim que seus espectadores começarem a assistir o vídeo embedado.
-              </p>
-            </div>
+            (() => {
+              const map = [null, "country", "device", "os", "browser", "referrer"] as const;
+              const key = map[activeTab];
+              const rows = key ? breakdowns[key] : [];
+              if (!rows.length) {
+                return (
+                  <div className="mt-6 rounded-lg border bg-card p-10 text-center">
+                    <h3 className="text-lg font-semibold text-foreground">{tabs[activeTab]}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Sem dados ainda. As estatísticas de <span className="font-medium">{tabs[activeTab].toLowerCase()}</span> aparecerão aqui assim que seus espectadores começarem a assistir o vídeo embedado.
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-6 rounded-lg border bg-card p-6">
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">{tabs[activeTab]}</h3>
+                  <div className="space-y-3">
+                    {rows.map((r) => (
+                      <div key={r.label}>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="font-medium text-foreground">{r.label}</span>
+                          <span className="text-muted-foreground">
+                            {r.count} ({r.pct.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${Math.max(2, r.pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()
           )}
 
           {activeTab === 0 && (

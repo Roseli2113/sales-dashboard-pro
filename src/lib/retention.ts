@@ -80,7 +80,58 @@ export function useRetentionTracking(
   }, [videoRef, videoId]);
 }
 
-export type RetentionPoint = { time: string; second: number; retention: number; viewers: number };
+export type RetentionPoint = {
+  time: string;
+  second: number;
+  retention: number;
+  viewers: number;
+  totalViewers: number;
+  dropOff: number;
+};
+
+export function formatRetentionTime(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds || 0));
+  const mm = String(Math.floor(safe / 60)).padStart(2, "0");
+  const ss = String(safe % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+async function fetchAllWatchRows(videoId: string): Promise<Array<{ session_id: string; second: number }>> {
+  const pageSize = 1000;
+  const rows: Array<{ session_id: string; second: number }> = [];
+  for (let from = 0; from < 100000; from += pageSize) {
+    const { data, error } = await supabase
+      .from("video_watch_events")
+      .select("session_id, second")
+      .eq("video_id", videoId)
+      .range(from, from + pageSize - 1);
+    if (error || !data?.length) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
+
+async function fetchAllEventRows(videoId: string): Promise<Array<{
+  session_id: string;
+  event_type: string;
+  current_time_seconds: number;
+  duration_seconds: number;
+}>> {
+  const pageSize = 1000;
+  const rows: Array<{ session_id: string; event_type: string; current_time_seconds: number; duration_seconds: number }> = [];
+  for (let from = 0; from < 100000; from += pageSize) {
+    const { data, error } = await supabase
+      .from("video_events")
+      .select("session_id, event_type, current_time_seconds, duration_seconds")
+      .eq("video_id", videoId)
+      .range(from, from + pageSize - 1);
+    if (error || !data?.length) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
 
 /**
  * Builds a retention curve: % of unique sessions still watching at each second.
@@ -89,47 +140,42 @@ export async function fetchRetentionCurve(
   videoId: string,
   durationSeconds: number,
 ): Promise<RetentionPoint[]> {
-  const { data, error } = await supabase
-    .from("video_watch_events")
-    .select("session_id, second")
-    .eq("video_id", videoId);
+  const watchRows = await fetchAllWatchRows(videoId);
+  const eventRows = watchRows.length ? [] : await fetchAllEventRows(videoId);
+  const sessionMaxSecond = new Map<string, number>();
 
-  if (error || !data) return [];
-
-  const totalSessions = new Set(data.map((r) => r.session_id)).size;
-  if (!totalSessions) return [];
-
-  const counts = new Map<number, Set<string>>();
-  for (const row of data) {
-    if (!counts.has(row.second)) counts.set(row.second, new Set());
-    counts.get(row.second)!.add(row.session_id);
+  for (const row of watchRows) {
+    sessionMaxSecond.set(row.session_id, Math.max(sessionMaxSecond.get(row.session_id) ?? 0, row.second));
   }
 
-  const dur = Math.max(1, Math.floor(durationSeconds || 0));
-  // Sample at most ~60 buckets for readability
-  const step = Math.max(1, Math.ceil(dur / 60));
+  for (const row of eventRows) {
+    const observed = row.event_type === "complete"
+      ? Math.max(row.current_time_seconds, row.duration_seconds || 0)
+      : row.current_time_seconds;
+    sessionMaxSecond.set(row.session_id, Math.max(sessionMaxSecond.get(row.session_id) ?? 0, observed));
+  }
+
+  const totalSessions = sessionMaxSecond.size;
+  if (!totalSessions) return [];
+
+  const maxObservedSecond = Math.max(...Array.from(sessionMaxSecond.values()), 0);
+  const eventDuration = Math.max(...eventRows.map((row) => row.duration_seconds || 0), 0);
+  const dur = Math.max(1, Math.floor(durationSeconds || 0), maxObservedSecond, eventDuration);
+  const step = dur <= 180 ? 1 : dur <= 600 ? 5 : dur <= 1800 ? 15 : 30;
+  const seconds = new Set<number>([0, dur]);
+  for (let s = 0; s <= dur; s += step) seconds.add(s);
+
   const points: RetentionPoint[] = [];
-  for (let s = 0; s <= dur; s += step) {
-    // Viewers still present = unique sessions that have watched ANY second >= s
-    let viewers = 0;
-    const seen = new Set<string>();
-    for (const [sec, sessions] of counts) {
-      if (sec >= s) {
-        for (const id of sessions) {
-          if (!seen.has(id)) {
-            seen.add(id);
-            viewers++;
-          }
-        }
-      }
-    }
-    const mm = String(Math.floor(s / 60)).padStart(2, "0");
-    const ss = String(s % 60).padStart(2, "0");
+  for (const s of Array.from(seconds).sort((a, b) => a - b)) {
+    const viewers = Array.from(sessionMaxSecond.values()).filter((maxSecond) => maxSecond >= s).length;
+    const retention = (viewers / totalSessions) * 100;
     points.push({
-      time: `${mm}:${ss}`,
+      time: formatRetentionTime(s),
       second: s,
-      retention: (viewers / totalSessions) * 100,
+      retention,
       viewers,
+      totalViewers: totalSessions,
+      dropOff: 100 - retention,
     });
   }
   return points;

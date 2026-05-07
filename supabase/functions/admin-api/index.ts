@@ -48,6 +48,20 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 400);
       return json({ ok: true });
     }
+
+    if (action === "set_plan") {
+      if (!body.userId || typeof body.userId !== "string") return json({ error: "Usuário inválido" }, 400);
+      const allowed = ["trial", "start", "pro", "premium"];
+      if (!allowed.includes(body.plan)) return json({ error: "Plano inválido" }, 400);
+      const update: Record<string, unknown> = { plan: body.plan, status: "active" };
+      if (body.plan !== "trial") {
+        update.plays_limit = body.plan === "premium" ? 1000000 : body.plan === "pro" ? 250000 : 50000;
+        update.trial_ends_at = null;
+      }
+      const { error } = await adminClient.from("profiles").update(update).eq("user_id", body.userId);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
   }
 
   const [{ data: usersData, error: usersError }, { data: profiles }, { data: videos }] = await Promise.all([

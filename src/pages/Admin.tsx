@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon } from "lucide-react";
@@ -68,6 +69,15 @@ export default function Admin() {
     }
   };
 
+  const setUserPlan = async (userId: string, plan: string) => {
+    const { error } = await supabase.functions.invoke(`admin-api?action=set_plan`, { body: { userId, plan } });
+    if (error) toast.error("Erro ao mudar plano");
+    else {
+      toast.success("Plano atualizado");
+      loadAdminData();
+    }
+  };
+
   const saveWebhook = async () => {
     const { error } = await (supabase as any).from("payment_webhooks").insert({ provider: "custom", webhook_url: webhookUrl, secret_hint: "Configure esta URL na plataforma de pagamento" });
     if (error) toast.error("Erro ao salvar webhook");
@@ -121,7 +131,17 @@ export default function Admin() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phone || "-"}</TableCell>
                     <TableCell><Badge variant={user.status === "blocked" ? "destructive" : "outline"}>{user.status === "blocked" ? "Bloqueado" : "Ativo"}</Badge></TableCell>
-                    <TableCell>{user.plan}</TableCell>
+                    <TableCell>
+                      <Select value={user.plan} onValueChange={(v) => setUserPlan(user.id, v)}>
+                        <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="trial">Teste</SelectItem>
+                          <SelectItem value="start">Start</SelectItem>
+                          <SelectItem value="pro">Pró</SelectItem>
+                          <SelectItem value="premium">Premium</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>{user.funnels}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">

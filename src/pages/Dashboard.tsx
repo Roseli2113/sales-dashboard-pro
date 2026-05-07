@@ -13,6 +13,8 @@ import { EmbedDialog } from "@/components/EmbedDialog";
 import { deleteVideo } from "@/lib/videos";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const [toDelete, setToDelete] = useState<Tables<"videos"> | null>(null);
   const [embedVideo, setEmbedVideo] = useState<Tables<"videos"> | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleDelete = async () => {
     if (!toDelete) return;
@@ -81,6 +84,7 @@ export default function Dashboard() {
     ? Math.max(0, Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / 86400000))
     : 14;
   const playsLeft = profile ? profile.plays_limit - profile.plays_used : 3000;
+  const trialExpired = profile?.plan === "trial" && (daysLeft <= 0 || playsLeft <= 0);
 
   return (
     <DashboardLayout>
@@ -182,6 +186,19 @@ export default function Dashboard() {
         )}
       </div>
       <UploadVideoDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={loadVideos} />
+      <Dialog open={trialExpired} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Seu período de teste terminou</DialogTitle>
+            <DialogDescription>
+              Para continuar usando a plataforma, escolha um plano pago. Seus vídeos e dados ficam preservados.
+            </DialogDescription>
+          </DialogHeader>
+          <Button className="w-full gradient-hero text-primary-foreground border-0" onClick={() => navigate("/dashboard/plans")}>
+            Ver planos
+          </Button>
+        </DialogContent>
+      </Dialog>
       {embedVideo && (
         <EmbedDialog
           open={!!embedVideo}

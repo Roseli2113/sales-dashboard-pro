@@ -124,6 +124,18 @@ export default function VideoAnalytics() {
   }, [id]);
 
   const pitchSeconds = video?.pitch_time_seconds ?? 0;
+  const chartTicks = retentionData
+    .filter((point) => point.second === 0 || point.second % 60 === 0 || point.second === retentionData.at(-1)?.second)
+    .map((point) => point.time);
+  const minuteMarkers = retentionData.filter((point) => point.second > 0 && point.second % 60 === 0);
+  const firstPoint = retentionData[0];
+  const finalPoint = retentionData.at(-1);
+  const bestDropPoint = retentionData.reduce<RetentionPoint | null>((worst, point, index) => {
+    if (index === 0) return worst;
+    const previous = retentionData[index - 1];
+    const drop = previous.retention - point.retention;
+    return !worst || drop > worst.dropOff ? { ...point, dropOff: drop } : worst;
+  }, null);
 
   // Compute pitch retention dynamically: % retention at the pitch second based on the curve.
   const computedPitchRetention = (() => {
@@ -267,10 +279,11 @@ export default function VideoAnalytics() {
                 <video
                   src={video.file_url}
                   controls
-                  className="absolute inset-0 h-full w-full object-contain opacity-60"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-45"
                 />
               )}
-              <div className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-0 bg-foreground/20" />
+              <div className="absolute inset-0 cursor-crosshair">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={retentionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <defs>
@@ -279,17 +292,20 @@ export default function VideoAnalytics() {
                         <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--background) / 0.2)" />
-                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.4)" />
-                    <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.4)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--background) / 0.28)" />
+                    <XAxis dataKey="time" ticks={chartTicks} tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.55)" />
+                    <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "hsl(var(--background))" }} stroke="hsl(var(--background) / 0.55)" />
                     <Tooltip
-                      formatter={(value: number) => [`${value.toFixed(1)}%`, "Retenção"]}
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }}
+                      content={<RetentionTooltip />}
+                      cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1.5, strokeDasharray: "4 4" }}
                     />
-                    <Area type="monotone" dataKey="retention" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#retGrad)" />
+                    {minuteMarkers.map((point) => (
+                      <ReferenceLine key={point.time} x={point.time} stroke="hsl(var(--background) / 0.2)" strokeWidth={1} />
+                    ))}
+                    <Area type="monotone" dataKey="retention" stroke="hsl(var(--success))" strokeWidth={3} fill="url(#retGrad)" dot={{ r: 2.5, fill: "hsl(var(--success))", strokeWidth: 0 }} activeDot={{ r: 6, stroke: "hsl(var(--background))", strokeWidth: 2 }} />
                     {pitchSeconds > 0 && (
                       <ReferenceLine
-                        x={pitchTimeLabel}
+                        x={formatRetentionTime(pitchSeconds)}
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         strokeDasharray="4 4"

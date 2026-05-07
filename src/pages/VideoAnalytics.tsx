@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { fetchRetentionCurve, type RetentionPoint } from "@/lib/retention";
+import { fetchRetentionCurve, formatRetentionTime, type RetentionPoint } from "@/lib/retention";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
@@ -36,6 +36,25 @@ const sideMenu = [
 const tabs = ["Retenção Geral", "Países", "Dispositivos", "Sistema Operacional", "Navegadores", "Origem do Tráfego"];
 
 type Breakdown = { label: string; count: number; pct: number };
+
+function RetentionTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: RetentionPoint }> }) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+  return (
+    <div className="rounded-md border bg-card px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-card-foreground">Tempo {point.time}</p>
+      <p className="mt-1 text-muted-foreground">
+        Retidos: <span className="font-medium text-card-foreground">{point.retention.toFixed(1)}%</span>
+      </p>
+      <p className="text-muted-foreground">
+        Pessoas: <span className="font-medium text-card-foreground">{point.viewers}/{point.totalViewers}</span>
+      </p>
+      <p className="text-muted-foreground">
+        Queda: <span className="font-medium text-card-foreground">{point.dropOff.toFixed(1)}%</span>
+      </p>
+    </div>
+  );
+}
 
 export default function VideoAnalytics() {
   const { id } = useParams();

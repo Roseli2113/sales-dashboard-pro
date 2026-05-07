@@ -319,8 +319,30 @@ export default function VideoAnalytics() {
             <p className="mt-2 text-xs text-muted-foreground">
               {retentionData.length === 0
                 ? "📊 Sem dados de retenção ainda. Compartilhe o embed do vídeo — assim que alguém assistir, a curva real aparecerá aqui sobreposta ao vídeo."
-                : "📊 O gráfico de retenção está sobreposto ao vídeo — assim você vê exatamente em que momento da VSL os espectadores abandonam."}
+                : "📊 Passe o mouse/toque na curva para ver a retenção exata em cada segundo; as linhas verticais marcam os minutos do vídeo."}
             </p>
+            {retentionData.length > 0 && (
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                <div className="rounded-md border bg-background p-3">
+                  <p className="text-xs text-muted-foreground">Início</p>
+                  <p className="mt-1 font-semibold text-foreground">
+                    {firstPoint?.retention.toFixed(1)}% · {firstPoint?.viewers}/{firstPoint?.totalViewers} pessoas
+                  </p>
+                </div>
+                <div className="rounded-md border bg-background p-3">
+                  <p className="text-xs text-muted-foreground">Maior queda</p>
+                  <p className="mt-1 font-semibold text-foreground">
+                    {bestDropPoint ? `${bestDropPoint.dropOff.toFixed(1)}% em ${bestDropPoint.time}` : "—"}
+                  </p>
+                </div>
+                <div className="rounded-md border bg-background p-3">
+                  <p className="text-xs text-muted-foreground">Final</p>
+                  <p className="mt-1 font-semibold text-foreground">
+                    {finalPoint?.retention.toFixed(1)}% · {finalPoint?.viewers}/{finalPoint?.totalViewers} pessoas
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           ) : (
             (() => {

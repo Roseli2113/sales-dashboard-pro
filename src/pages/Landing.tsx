@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Play, BarChart3, Zap, Shield, Check, ArrowRight } from "lucide-react";
+import { Play, BarChart3, Zap, Shield, Check, ArrowRight, TrendingDown, Eye, MousePointerClick } from "lucide-react";
 import { motion } from "framer-motion";
+import analyticsDashboard from "@/assets/analytics-dashboard.png.asset.json";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -94,6 +95,78 @@ export default function Landing() {
               </Button>
             </Link>
           </motion.div>
+          <motion.div
+            className="mx-auto mt-16 max-w-5xl"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.7 }}
+          >
+            <div className="relative rounded-2xl border bg-card p-2 shadow-2xl shadow-primary/20 ring-1 ring-primary/10">
+              <div className="absolute -inset-1 -z-10 rounded-2xl gradient-hero opacity-20 blur-2xl" />
+              <img
+                src={analyticsDashboard.url}
+                alt="Dashboard de analytics do VPlay mostrando curva de retenção, plays, visualizações e play rate"
+                className="w-full rounded-xl"
+                loading="lazy"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Analytics showcase */}
+      <section className="border-t py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                Analytics em tempo real
+              </span>
+              <h2 className="mt-4 text-3xl font-bold text-foreground md:text-4xl">
+                Descubra exatamente onde seus espectadores desistem
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                A curva de retenção segundo a segundo revela os momentos críticos do seu vídeo.
+                Saiba onde otimizar o roteiro, onde colocar o CTA e como aumentar suas conversões com dados reais.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  { icon: TrendingDown, text: "Curva de retenção interativa com tooltips por segundo" },
+                  { icon: Eye, text: "Visualizações, plays únicos e play rate em tempo real" },
+                  { icon: MousePointerClick, text: "Pitch automático no maior ponto de queda" },
+                ].map((item) => (
+                  <li key={item.text} className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <span className="pt-1 text-sm text-foreground">{item.text}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8">
+                <Link to="/signup">
+                  <Button size="lg" className="gradient-hero text-primary-foreground border-0">
+                    Quero ver meus dados <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 -z-10 rounded-2xl gradient-hero opacity-10 blur-3xl" />
+              <img
+                src={analyticsDashboard.url}
+                alt="Painel de métricas detalhadas do VPlay"
+                className="w-full rounded-xl border shadow-xl"
+                loading="lazy"
+              />
+            </motion.div>
+          </div>
         </div>
       </section>
 

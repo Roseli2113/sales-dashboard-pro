@@ -195,6 +195,18 @@ export default function Landing() {
 
       {/* Features */}
       <section className="border-t py-20">
+        <div className="container mx-auto px-4 mb-16">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Empresas que confiam no VPlay
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+            {brandLogos.map((brand) => (
+              <span key={brand} className="text-base font-semibold tracking-tight text-muted-foreground">
+                {brand}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="container mx-auto px-4">
           <h2 className="text-center text-3xl font-bold text-foreground">
             Tudo que você precisa para vender mais
@@ -220,6 +232,47 @@ export default function Landing() {
                 <h3 className="mt-4 font-semibold text-card-foreground">{f.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
               </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="border-t bg-secondary/30 py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-center text-3xl font-bold text-foreground">
+            Quem usa, recomenda
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
+            Mais de 2.000 times de marketing escalam suas VSLs com o VPlay.
+          </p>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <motion.figure
+                key={t.name}
+                className="rounded-xl border bg-card p-6 shadow-sm"
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+              >
+                <div className="mb-3 flex gap-0.5 text-primary" aria-label="Avaliação 5 de 5">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <svg key={idx} className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9 4.8 17.6l1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
+                    </svg>
+                  ))}
+                </div>
+                <blockquote className="text-sm leading-relaxed text-card-foreground">
+                  "{t.quote}"
+                </blockquote>
+                <figcaption className="mt-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </figcaption>
+              </motion.figure>
             ))}
           </div>
         </div>

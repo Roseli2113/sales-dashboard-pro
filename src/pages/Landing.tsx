@@ -12,7 +12,7 @@ const fadeUp = {
 const plans = [
   {
     name: "Starter",
-    price: "R$ 97",
+    price: "R$ 9,90",
     period: "/mês",
     description: "Para quem está começando",
     features: ["5 vídeos", "1.000 plays/mês", "Analytics básico", "Player personalizado", "Suporte por email"],
@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 197",
+    price: "R$ 29,90",
     period: "/mês",
     description: "Para profissionais de marketing",
     features: ["50 vídeos", "25.000 plays/mês", "Analytics avançado", "Testes A/B", "Player 2.0", "Suporte prioritário"],
@@ -28,13 +28,36 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$ 497",
+    price: "R$ 49,90",
     period: "/mês",
     description: "Para equipes e agências",
     features: ["Vídeos ilimitados", "100.000 plays/mês", "Analytics completo", "Testes A/B ilimitados", "API de integração", "Suporte dedicado"],
     popular: false,
   },
 ];
+
+const testimonials = [
+  {
+    name: "Mariana Costa",
+    role: "Head de Growth, Tropa Digital",
+    quote: "Aumentamos a conversão da nossa VSL em 38% no primeiro mês só ajustando o roteiro a partir da curva de retenção do VPlay.",
+    initials: "MC",
+  },
+  {
+    name: "Rafael Andrade",
+    role: "CEO, Escola Vender Mais",
+    quote: "Saímos do Vimeo e do YouTube. O player é rápido, o analytics é cirúrgico e o suporte responde em minutos.",
+    initials: "RA",
+  },
+  {
+    name: "Camila Rocha",
+    role: "Diretora de Marketing, NovaLead",
+    quote: "Os testes A/B do VPlay nos mostraram qual abertura de vídeo realmente prende a atenção. Triplicamos o ROAS da campanha.",
+    initials: "CR",
+  },
+];
+
+const brandLogos = ["Tropa Digital", "Escola Vender Mais", "NovaLead", "Agência Foco", "Mentoria 8 Dígitos", "Lumen Co."];
 
 export default function Landing() {
   return (

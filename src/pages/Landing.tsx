@@ -12,7 +12,7 @@ const fadeUp = {
 const plans = [
   {
     name: "Starter",
-    price: "R$ 97",
+    price: "R$ 9,90",
     period: "/mês",
     description: "Para quem está começando",
     features: ["5 vídeos", "1.000 plays/mês", "Analytics básico", "Player personalizado", "Suporte por email"],
@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "R$ 197",
+    price: "R$ 29,90",
     period: "/mês",
     description: "Para profissionais de marketing",
     features: ["50 vídeos", "25.000 plays/mês", "Analytics avançado", "Testes A/B", "Player 2.0", "Suporte prioritário"],
@@ -28,13 +28,36 @@ const plans = [
   },
   {
     name: "Business",
-    price: "R$ 497",
+    price: "R$ 49,90",
     period: "/mês",
     description: "Para equipes e agências",
     features: ["Vídeos ilimitados", "100.000 plays/mês", "Analytics completo", "Testes A/B ilimitados", "API de integração", "Suporte dedicado"],
     popular: false,
   },
 ];
+
+const testimonials = [
+  {
+    name: "Mariana Costa",
+    role: "Head de Growth, Tropa Digital",
+    quote: "Aumentamos a conversão da nossa VSL em 38% no primeiro mês só ajustando o roteiro a partir da curva de retenção do VPlay.",
+    initials: "MC",
+  },
+  {
+    name: "Rafael Andrade",
+    role: "CEO, Escola Vender Mais",
+    quote: "Saímos do Vimeo e do YouTube. O player é rápido, o analytics é cirúrgico e o suporte responde em minutos.",
+    initials: "RA",
+  },
+  {
+    name: "Camila Rocha",
+    role: "Diretora de Marketing, NovaLead",
+    quote: "Os testes A/B do VPlay nos mostraram qual abertura de vídeo realmente prende a atenção. Triplicamos o ROAS da campanha.",
+    initials: "CR",
+  },
+];
+
+const brandLogos = ["Tropa Digital", "Escola Vender Mais", "NovaLead", "Agência Foco", "Mentoria 8 Dígitos", "Lumen Co."];
 
 export default function Landing() {
   return (
@@ -172,6 +195,18 @@ export default function Landing() {
 
       {/* Features */}
       <section className="border-t py-20">
+        <div className="container mx-auto px-4 mb-16">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Empresas que confiam no VPlay
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+            {brandLogos.map((brand) => (
+              <span key={brand} className="text-base font-semibold tracking-tight text-muted-foreground">
+                {brand}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="container mx-auto px-4">
           <h2 className="text-center text-3xl font-bold text-foreground">
             Tudo que você precisa para vender mais
@@ -197,6 +232,47 @@ export default function Landing() {
                 <h3 className="mt-4 font-semibold text-card-foreground">{f.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
               </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="border-t bg-secondary/30 py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-center text-3xl font-bold text-foreground">
+            Quem usa, recomenda
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
+            Mais de 2.000 times de marketing escalam suas VSLs com o VPlay.
+          </p>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <motion.figure
+                key={t.name}
+                className="rounded-xl border bg-card p-6 shadow-sm"
+                initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+              >
+                <div className="mb-3 flex gap-0.5 text-primary" aria-label="Avaliação 5 de 5">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <svg key={idx} className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9 4.8 17.6l1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
+                    </svg>
+                  ))}
+                </div>
+                <blockquote className="text-sm leading-relaxed text-card-foreground">
+                  "{t.quote}"
+                </blockquote>
+                <figcaption className="mt-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-hero text-sm font-semibold text-primary-foreground">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </figcaption>
+              </motion.figure>
             ))}
           </div>
         </div>

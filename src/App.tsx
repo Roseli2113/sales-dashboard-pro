@@ -14,6 +14,10 @@ import VideoAnalytics from "./pages/VideoAnalytics";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import Plans from "./pages/Plans";
+import AbTests from "./pages/AbTests";
+import Conversions from "./pages/Conversions";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Embed from "./pages/Embed";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -36,9 +40,13 @@ const App = () => (
             <Route path="/dashboard/video/:id" element={<ProtectedRoute><VideoDetail /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id/edit" element={<ProtectedRoute><VideoEdit /></ProtectedRoute>} />
             <Route path="/dashboard/video/:id/analytics" element={<ProtectedRoute><VideoAnalytics /></ProtectedRoute>} />
-            <Route path="/dashboard/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/dashboard/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+            <Route path="/dashboard/ab-tests" element={<ProtectedRoute><AbTests /></ProtectedRoute>} />
+            <Route path="/dashboard/conversions" element={<ProtectedRoute><Conversions /></ProtectedRoute>} />
+            <Route path="/dashboard/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/dashboard/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

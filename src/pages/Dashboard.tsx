@@ -115,7 +115,7 @@ export default function Dashboard() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9 w-48" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <Button variant="outline" size="sm"><FolderPlus className="mr-2 h-4 w-4" /> Nova Pasta</Button>
+          <Button variant="outline" size="sm" onClick={() => toast.info("Organização por pastas em breve!")}><FolderPlus className="mr-2 h-4 w-4" /> Nova Pasta</Button>
           <Button size="sm" className="gradient-hero text-primary-foreground border-0" onClick={() => setUploadOpen(true)}><Upload className="mr-2 h-4 w-4" /> Upload</Button>
         </div>
       </div>

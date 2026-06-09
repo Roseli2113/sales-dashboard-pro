@@ -29,10 +29,10 @@ import {
 
 const sideMenu = [
   { label: "Detalhes", icon: VideoIcon, link: "" },
-  { label: "Editar", icon: Pencil },
-  { label: "Analytics", icon: BarChart3, active: true },
-  { label: "Download", icon: Download },
-  { label: "Remover", icon: Trash2, destructive: true },
+  { label: "Editar", icon: Pencil, link: "edit" },
+  { label: "Analytics", icon: BarChart3, link: "analytics", active: true },
+  { label: "Download", icon: Download, link: "__download__" },
+  { label: "Remover", icon: Trash2, link: "", destructive: true },
 ];
 
 const tabs = ["Retenção Geral", "Países", "Dispositivos", "Sistema Operacional", "Navegadores", "Origem do Tráfego"];
@@ -237,7 +237,18 @@ export default function VideoAnalytics() {
             {sideMenu.map((item) => (
               <button
                 key={item.label}
-                onClick={() => { if (item.link === "") navigate(`/dashboard/video/${id}`); }}
+                onClick={() => {
+                  if (item.active) return;
+                  if (item.link === "__download__") {
+                    if (video?.file_url) window.open(video.file_url, "_blank");
+                    return;
+                  }
+                  if (item.link === "") {
+                    navigate(`/dashboard/video/${id}`);
+                  } else if (item.link) {
+                    navigate(`/dashboard/video/${id}/${item.link}`);
+                  }
+                }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   item.active ? "bg-sidebar-accent text-primary font-medium"
                     : item.destructive ? "text-destructive hover:bg-destructive/10"

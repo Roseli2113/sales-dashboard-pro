@@ -27,7 +27,7 @@ const sideMenuItems = [
   { label: "Detalhes", icon: VideoIcon, active: true, link: null },
   { label: "Editar", icon: Pencil, link: "edit" },
   { label: "Analytics", icon: BarChart3, link: "analytics" },
-  { label: "Download", icon: Download, link: null },
+  { label: "Download", icon: Download, link: "__download__" },
   { label: "Remover", icon: Trash2, destructive: true, link: "__delete__" },
 ];
 
@@ -62,6 +62,10 @@ export default function VideoDetail() {
   const handleMenuClick = (link: string | null) => {
     if (!link) return;
     if (link === "__delete__") setConfirmDelete(true);
+    else if (link === "__download__") {
+      if (video?.file_url) window.open(video.file_url, "_blank");
+      else toast.error("Vídeo indisponível para download");
+    }
     else navigate(`/dashboard/video/${id}/${link}`);
   };
 

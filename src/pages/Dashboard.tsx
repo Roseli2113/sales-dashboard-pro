@@ -35,6 +35,7 @@ import {
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [videos, setVideos] = useState<Tables<"videos">[]>([]);
+  const [playCounts, setPlayCounts] = useState<Record<string, number>>({});
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -73,12 +74,25 @@ export default function Dashboard() {
       if (vRes.data) setVideos(vRes.data);
       if (pRes.data) setProfile(pRes.data);
       setLoading(false);
+      if (vRes.data?.length) {
+        const ids = vRes.data.map((v) => v.id);
+        const { data: events } = await supabase
+          .from("video_events")
+          .select("video_id")
+          .in("video_id", ids)
+          .eq("event_type", "play");
+        const counts: Record<string, number> = {};
+        (events ?? []).forEach((e: { video_id: string }) => {
+          counts[e.video_id] = (counts[e.video_id] ?? 0) + 1;
+        });
+        setPlayCounts(counts);
+      }
     };
     load();
   }, [user]);
 
   const byTab = (() => {
-    if (tab === "top") return [...videos].sort((a, b) => (b.total_plays ?? 0) - (a.total_plays ?? 0));
+    if (tab === "top") return [...videos].sort((a, b) => (playCounts[b.id] ?? b.total_plays ?? 0) - (playCounts[a.id] ?? a.total_plays ?? 0));
     if (tab === "trash") return [];
     return videos;
   })();
@@ -182,7 +196,7 @@ export default function Dashboard() {
               <span className="w-28 text-center text-sm text-muted-foreground">
                 {new Date(video.created_at).toLocaleDateString("pt-BR")}
               </span>
-              <span className="w-20 text-center text-sm text-card-foreground font-medium">{video.total_plays}</span>
+              <span className="w-20 text-center text-sm text-card-foreground font-medium">{playCounts[video.id] ?? video.total_plays ?? 0}</span>
               <div className="w-20 flex justify-center gap-1">
                 <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                   <Link to={`/dashboard/video/${video.id}`}><Eye className="h-3.5 w-3.5 text-muted-foreground" /></Link>

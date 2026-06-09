@@ -12,6 +12,7 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -21,6 +22,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { fetchRetentionCurve, formatRetentionTime, type RetentionPoint } from "@/lib/retention";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -62,6 +64,8 @@ export default function VideoAnalytics() {
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [metrics, setMetrics] = useState<Tables<"video_metrics">[]>([]);
   const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingBreakdowns, setLoadingBreakdowns] = useState(true);
   const [editingPitch, setEditingPitch] = useState(false);
   const [pitchInput, setPitchInput] = useState("0:00");
   const [activeTab, setActiveTab] = useState(0);
@@ -72,6 +76,8 @@ export default function VideoAnalytics() {
   useEffect(() => {
     if (!id) return;
     const load = async () => {
+      setLoading(true);
+      setLoadingBreakdowns(true);
       const [vRes, mRes] = await Promise.all([
         supabase.from("videos").select("*").eq("id", id).single(),
         supabase.from("video_metrics").select("*").eq("video_id", id).order("date", { ascending: false }).limit(30),
@@ -84,6 +90,7 @@ export default function VideoAnalytics() {
         setRetentionData(curve);
       }
       if (mRes.data) setMetrics(mRes.data);
+      setLoading(false);
 
       const { data: events } = await supabase
         .from("video_events")
@@ -119,6 +126,7 @@ export default function VideoAnalytics() {
           referrer: build("referrer"),
         });
       }
+      setLoadingBreakdowns(false);
     };
     load();
   }, [id]);

@@ -291,6 +291,13 @@ export default function VideoAnalytics() {
                 />
               )}
               <div className="absolute inset-0 bg-foreground/20" />
+              {loading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-foreground/60 backdrop-blur-sm">
+                  <Loader2 className="h-10 w-10 animate-spin text-background" />
+                  <p className="text-sm font-medium text-background">Carregando dados de analytics…</p>
+                  <p className="text-xs text-background/70">Buscando eventos e calculando a curva de retenção</p>
+                </div>
+              )}
               <div className="absolute inset-0 cursor-crosshair">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={retentionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>

@@ -12,6 +12,7 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
@@ -21,6 +22,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { fetchRetentionCurve, formatRetentionTime, type RetentionPoint } from "@/lib/retention";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -62,6 +64,8 @@ export default function VideoAnalytics() {
   const [video, setVideo] = useState<Tables<"videos"> | null>(null);
   const [metrics, setMetrics] = useState<Tables<"video_metrics">[]>([]);
   const [retentionData, setRetentionData] = useState<RetentionPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingBreakdowns, setLoadingBreakdowns] = useState(true);
   const [editingPitch, setEditingPitch] = useState(false);
   const [pitchInput, setPitchInput] = useState("0:00");
   const [activeTab, setActiveTab] = useState(0);
@@ -72,6 +76,8 @@ export default function VideoAnalytics() {
   useEffect(() => {
     if (!id) return;
     const load = async () => {
+      setLoading(true);
+      setLoadingBreakdowns(true);
       const [vRes, mRes] = await Promise.all([
         supabase.from("videos").select("*").eq("id", id).single(),
         supabase.from("video_metrics").select("*").eq("video_id", id).order("date", { ascending: false }).limit(30),
@@ -84,6 +90,7 @@ export default function VideoAnalytics() {
         setRetentionData(curve);
       }
       if (mRes.data) setMetrics(mRes.data);
+      setLoading(false);
 
       const { data: events } = await supabase
         .from("video_events")
@@ -119,6 +126,7 @@ export default function VideoAnalytics() {
           referrer: build("referrer"),
         });
       }
+      setLoadingBreakdowns(false);
     };
     load();
   }, [id]);
@@ -283,6 +291,13 @@ export default function VideoAnalytics() {
                 />
               )}
               <div className="absolute inset-0 bg-foreground/20" />
+              {loading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-foreground/60 backdrop-blur-sm">
+                  <Loader2 className="h-10 w-10 animate-spin text-background" />
+                  <p className="text-sm font-medium text-background">Carregando dados de analytics…</p>
+                  <p className="text-xs text-background/70">Buscando eventos e calculando a curva de retenção</p>
+                </div>
+              )}
               <div className="absolute inset-0 cursor-crosshair">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={retentionData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -349,6 +364,27 @@ export default function VideoAnalytics() {
               const map = [null, "country", "device", "os", "browser", "referrer"] as const;
               const key = map[activeTab];
               const rows = key ? breakdowns[key] : [];
+              if (loadingBreakdowns) {
+                return (
+                  <div className="mt-6 rounded-lg border bg-card p-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <h3 className="text-lg font-semibold text-foreground">Carregando {tabs[activeTab].toLowerCase()}…</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i}>
+                          <div className="mb-1 flex items-center justify-between">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-16" />
+                          </div>
+                          <Skeleton className="h-2 w-full rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
               if (!rows.length) {
                 return (
                   <div className="mt-6 rounded-lg border bg-card p-10 text-center">
@@ -395,7 +431,14 @@ export default function VideoAnalytics() {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-              {metricCards.map((m) => (
+              {loading
+                ? Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="rounded-lg border bg-card p-4">
+                      <Skeleton className="h-6 w-16" />
+                      <Skeleton className="mt-2 h-3 w-20" />
+                    </div>
+                  ))
+                : metricCards.map((m) => (
                 <div key={m.label} className="rounded-lg border bg-card p-4">
                   <p className="text-xl font-bold text-card-foreground">{m.value}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{m.label}</p>

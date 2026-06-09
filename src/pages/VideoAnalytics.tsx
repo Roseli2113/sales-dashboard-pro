@@ -431,7 +431,14 @@ export default function VideoAnalytics() {
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-              {metricCards.map((m) => (
+              {loading
+                ? Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="rounded-lg border bg-card p-4">
+                      <Skeleton className="h-6 w-16" />
+                      <Skeleton className="mt-2 h-3 w-20" />
+                    </div>
+                  ))
+                : metricCards.map((m) => (
                 <div key={m.label} className="rounded-lg border bg-card p-4">
                   <p className="text-xl font-bold text-card-foreground">{m.value}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{m.label}</p>

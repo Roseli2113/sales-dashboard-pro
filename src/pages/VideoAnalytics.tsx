@@ -364,6 +364,27 @@ export default function VideoAnalytics() {
               const map = [null, "country", "device", "os", "browser", "referrer"] as const;
               const key = map[activeTab];
               const rows = key ? breakdowns[key] : [];
+              if (loadingBreakdowns) {
+                return (
+                  <div className="mt-6 rounded-lg border bg-card p-6">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <h3 className="text-lg font-semibold text-foreground">Carregando {tabs[activeTab].toLowerCase()}…</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i}>
+                          <div className="mb-1 flex items-center justify-between">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-16" />
+                          </div>
+                          <Skeleton className="h-2 w-full rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
               if (!rows.length) {
                 return (
                   <div className="mt-6 rounded-lg border bg-card p-10 text-center">

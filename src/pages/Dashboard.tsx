@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Tables<"videos"> | null>(null);
   const [embedVideo, setEmbedVideo] = useState<Tables<"videos"> | null>(null);
+  const [tab, setTab] = useState<"library" | "top" | "trash">("library");
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -76,7 +77,12 @@ export default function Dashboard() {
     load();
   }, [user]);
 
-  const filtered = videos.filter((v) =>
+  const byTab = (() => {
+    if (tab === "top") return [...videos].sort((a, b) => (b.total_plays ?? 0) - (a.total_plays ?? 0));
+    if (tab === "trash") return [];
+    return videos;
+  })();
+  const filtered = byTab.filter((v) =>
     v.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -105,9 +111,24 @@ export default function Dashboard() {
             Meus vídeos
           </h1>
           <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
-            <button className="border-b-2 border-primary pb-1 font-medium text-foreground">Biblioteca</button>
-            <button className="pb-1 hover:text-foreground">Top vídeos</button>
-            <button className="pb-1 hover:text-foreground">Lixeira</button>
+            <button
+              onClick={() => setTab("library")}
+              className={`pb-1 ${tab === "library" ? "border-b-2 border-primary font-medium text-foreground" : "hover:text-foreground"}`}
+            >
+              Biblioteca
+            </button>
+            <button
+              onClick={() => setTab("top")}
+              className={`pb-1 ${tab === "top" ? "border-b-2 border-primary font-medium text-foreground" : "hover:text-foreground"}`}
+            >
+              Top vídeos
+            </button>
+            <button
+              onClick={() => setTab("trash")}
+              className={`pb-1 ${tab === "trash" ? "border-b-2 border-primary font-medium text-foreground" : "hover:text-foreground"}`}
+            >
+              Lixeira
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -131,7 +152,11 @@ export default function Dashboard() {
           <div className="p-8 text-center text-muted-foreground">Carregando...</div>
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            Nenhum vídeo encontrado. Faça upload do seu primeiro vídeo!
+            {tab === "trash"
+              ? "Lixeira vazia."
+              : tab === "top"
+              ? "Nenhum vídeo com plays ainda."
+              : "Nenhum vídeo encontrado. Faça upload do seu primeiro vídeo!"}
           </div>
         ) : (
           filtered.map((video) => (

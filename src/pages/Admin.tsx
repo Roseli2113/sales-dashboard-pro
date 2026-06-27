@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon } from "lucide-react";
+import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon, ShoppingCart, DollarSign } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -27,9 +27,12 @@ type AdminUser = {
 
 type WebhookRow = { id: string; provider: string; webhook_url: string; secret_hint: string | null; is_active: boolean };
 
+type SaleRow = { id: string; provider: string; event_type: string | null; customer_email: string | null; plan: string | null; created_at: string; raw_payload: any };
+
 export default function Admin() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const onlineUsers = useOnlineUsers();
@@ -53,6 +56,9 @@ export default function Admin() {
 
     const { data: webhookData } = await (supabase as any).from("payment_webhooks").select("*").order("created_at", { ascending: false });
     setWebhooks(webhookData ?? []);
+
+    const { data: salesData } = await (supabase as any).from("payment_events").select("*").order("created_at", { ascending: false }).limit(500);
+    setSales(salesData ?? []);
     setLoading(false);
   };
 
@@ -106,6 +112,7 @@ export default function Admin() {
         <Tabs defaultValue="users">
           <TabsList>
             <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="sales">Vendas</TabsTrigger>
             <TabsTrigger value="webhook">URL/Webhook</TabsTrigger>
           </TabsList>
 
@@ -154,6 +161,10 @@ export default function Admin() {
                 ))}
               </TableBody>
             </Table>
+          </TabsContent>
+
+          <TabsContent value="sales" className="mt-4 space-y-4">
+            <SalesPanel sales={sales} loading={loading} />
           </TabsContent>
 
           <TabsContent value="webhook" className="mt-4 space-y-4">

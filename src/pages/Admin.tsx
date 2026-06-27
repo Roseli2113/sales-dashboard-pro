@@ -216,3 +216,76 @@ function MetricCard({ icon: Icon, label, value }: { icon: typeof Users; label: s
     </div>
   );
 }
+
+function extractAmount(raw: any): string {
+  if (!raw) return "-";
+  const paths = [
+    raw?.amount,
+    raw?.total,
+    raw?.value,
+    raw?.data?.amount,
+    raw?.data?.object?.amount_total,
+    raw?.data?.object?.amount,
+    raw?.transaction?.amount,
+  ];
+  for (const v of paths) {
+    if (v != null && v !== "") {
+      const num = typeof v === "number" ? v : parseFloat(String(v));
+      if (!isNaN(num)) {
+        const value = num > 1000 ? num / 100 : num;
+        return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      }
+    }
+  }
+  return "-";
+}
+
+function SalesPanel({ sales, loading }: { sales: SaleRow[]; loading: boolean }) {
+  const totalSales = sales.length;
+  const byPlan = sales.reduce<Record<string, number>>((acc, s) => {
+    const k = (s.plan ?? "—").toLowerCase();
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard icon={ShoppingCart} label="Total de vendas" value={totalSales} />
+        <MetricCard icon={DollarSign} label="Start" value={byPlan["start"] ?? 0} />
+        <MetricCard icon={DollarSign} label="Pró" value={byPlan["pro"] ?? 0} />
+        <MetricCard icon={DollarSign} label="Premium" value={byPlan["premium"] ?? 0} />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Email do comprador</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Plataforma</TableHead>
+              <TableHead>Evento</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>
+            ) : sales.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda registrada ainda.</TableCell></TableRow>
+            ) : sales.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell className="whitespace-nowrap text-sm">{new Date(s.created_at).toLocaleString("pt-BR")}</TableCell>
+                <TableCell className="font-medium">{s.customer_email ?? "—"}</TableCell>
+                <TableCell><Badge variant="outline">{s.plan ?? "—"}</Badge></TableCell>
+                <TableCell>{extractAmount(s.raw_payload)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{s.provider}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{s.event_type ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
+  );
+}

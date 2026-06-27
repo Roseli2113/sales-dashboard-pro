@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon, ShoppingCart, DollarSign } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -240,30 +241,148 @@ function extractAmount(raw: any): string {
   return "-";
 }
 
+function extractAmountNumber(raw: any): number {
+  if (!raw) return 0;
+  const paths = [raw?.amount, raw?.total, raw?.value, raw?.data?.amount, raw?.data?.object?.amount_total, raw?.data?.object?.amount, raw?.transaction?.amount];
+  for (const v of paths) {
+    if (v != null && v !== "") {
+      const num = typeof v === "number" ? v : parseFloat(String(v));
+      if (!isNaN(num)) return num > 1000 ? num / 100 : num;
+    }
+  }
+  return 0;
+}
+
 function SalesPanel({ sales, loading }: { sales: SaleRow[]; loading: boolean }) {
-  const totalSales = sales.length;
-  const byPlan = sales.reduce<Record<string, number>>((acc, s) => {
+  const [emailQuery, setEmailQuery] = useState("");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"created_at" | "amount" | "plan">("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const eventTypes = useMemo(() => {
+    const set = new Set<string>();
+    sales.forEach((s) => { if (s.event_type) set.add(s.event_type); });
+    return Array.from(set).sort();
+  }, [sales]);
+
+  const filtered = useMemo(() => {
+    const q = emailQuery.trim().toLowerCase();
+    const start = startDate ? new Date(startDate + "T00:00:00").getTime() : null;
+    const end = endDate ? new Date(endDate + "T23:59:59").getTime() : null;
+    return sales.filter((s) => {
+      if (q && !(s.customer_email ?? "").toLowerCase().includes(q)) return false;
+      if (planFilter !== "all" && (s.plan ?? "").toLowerCase() !== planFilter) return false;
+      if (eventFilter !== "all" && (s.event_type ?? "") !== eventFilter) return false;
+      const t = new Date(s.created_at).getTime();
+      if (start !== null && t < start) return false;
+      if (end !== null && t > end) return false;
+      return true;
+    });
+  }, [sales, emailQuery, planFilter, eventFilter, startDate, endDate]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      let va: any, vb: any;
+      if (sortBy === "created_at") { va = new Date(a.created_at).getTime(); vb = new Date(b.created_at).getTime(); }
+      else if (sortBy === "amount") { va = extractAmountNumber(a.raw_payload); vb = extractAmountNumber(b.raw_payload); }
+      else { va = (a.plan ?? "").toLowerCase(); vb = (b.plan ?? "").toLowerCase(); }
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortBy, sortDir]);
+
+  useEffect(() => { setPage(1); }, [emailQuery, planFilter, eventFilter, startDate, endDate, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const totalSales = filtered.length;
+  const byPlan = filtered.reduce<Record<string, number>>((acc, s) => {
     const k = (s.plan ?? "—").toLowerCase();
     acc[k] = (acc[k] ?? 0) + 1;
     return acc;
   }, {});
 
+  const toggleSort = (col: "created_at" | "amount" | "plan") => {
+    if (sortBy === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setSortDir("desc"); }
+  };
+
+  const SortIcon = ({ col }: { col: "created_at" | "amount" | "plan" }) => {
+    if (sortBy !== col) return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-50" />;
+    return sortDir === "asc" ? <ArrowUp className="ml-1 inline h-3 w-3" /> : <ArrowDown className="ml-1 inline h-3 w-3" />;
+  };
+
+  const clearFilters = () => { setEmailQuery(""); setPlanFilter("all"); setEventFilter("all"); setStartDate(""); setEndDate(""); };
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard icon={ShoppingCart} label="Total de vendas" value={totalSales} />
+        <MetricCard icon={ShoppingCart} label="Total (filtrado)" value={totalSales} />
         <MetricCard icon={DollarSign} label="Start" value={byPlan["start"] ?? 0} />
         <MetricCard icon={DollarSign} label="Pró" value={byPlan["pro"] ?? 0} />
         <MetricCard icon={DollarSign} label="Premium" value={byPlan["premium"] ?? 0} />
       </div>
+
+      <div className="rounded-lg border bg-card p-4">
+        <div className="grid gap-3 md:grid-cols-6">
+          <div className="md:col-span-2">
+            <Label className="text-xs">Buscar por email</Label>
+            <Input value={emailQuery} onChange={(e) => setEmailQuery(e.target.value)} placeholder="email@dominio.com" />
+          </div>
+          <div>
+            <Label className="text-xs">Plano</Label>
+            <Select value={planFilter} onValueChange={setPlanFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="start">Start</SelectItem>
+                <SelectItem value="pro">Pró</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Tipo de evento</Label>
+            <Select value={eventFilter} onValueChange={setEventFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {eventTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">De</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Até</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Button variant="ghost" size="sm" onClick={clearFilters}>Limpar filtros</Button>
+        </div>
+      </div>
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Data</TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("created_at")}>Data<SortIcon col="created_at" /></TableHead>
               <TableHead>Email do comprador</TableHead>
-              <TableHead>Plano</TableHead>
-              <TableHead>Valor</TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("plan")}>Plano<SortIcon col="plan" /></TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("amount")}>Valor<SortIcon col="amount" /></TableHead>
               <TableHead>Plataforma</TableHead>
               <TableHead>Evento</TableHead>
             </TableRow>
@@ -271,9 +390,9 @@ function SalesPanel({ sales, loading }: { sales: SaleRow[]; loading: boolean }) 
           <TableBody>
             {loading ? (
               <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>
-            ) : sales.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda registrada ainda.</TableCell></TableRow>
-            ) : sales.map((s) => (
+            ) : pageRows.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda encontrada.</TableCell></TableRow>
+            ) : pageRows.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="whitespace-nowrap text-sm">{new Date(s.created_at).toLocaleString("pt-BR")}</TableCell>
                 <TableCell className="font-medium">{s.customer_email ?? "—"}</TableCell>
@@ -285,6 +404,23 @@ function SalesPanel({ sales, loading }: { sales: SaleRow[]; loading: boolean }) 
             ))}
           </TableBody>
         </Table>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t p-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Linhas por página:</span>
+            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+              <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[10, 25, 50, 100].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span className="ml-3">{sorted.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, sorted.length)} de {sorted.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button>
+            <span className="text-sm">Página {currentPage} de {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Próxima</Button>
+          </div>
+        </div>
       </div>
     </>
   );

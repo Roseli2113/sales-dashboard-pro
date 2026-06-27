@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon } from "lucide-react";
+import { Copy, Eye, Lock, Trash2, Users, Crown, Activity, Link as LinkIcon, ShoppingCart, DollarSign } from "lucide-react";
 
 type AdminUser = {
   id: string;
@@ -27,9 +27,12 @@ type AdminUser = {
 
 type WebhookRow = { id: string; provider: string; webhook_url: string; secret_hint: string | null; is_active: boolean };
 
+type SaleRow = { id: string; provider: string; event_type: string | null; customer_email: string | null; plan: string | null; created_at: string; raw_payload: any };
+
 export default function Admin() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const onlineUsers = useOnlineUsers();
@@ -53,6 +56,9 @@ export default function Admin() {
 
     const { data: webhookData } = await (supabase as any).from("payment_webhooks").select("*").order("created_at", { ascending: false });
     setWebhooks(webhookData ?? []);
+
+    const { data: salesData } = await (supabase as any).from("payment_events").select("*").order("created_at", { ascending: false }).limit(500);
+    setSales(salesData ?? []);
     setLoading(false);
   };
 
@@ -106,6 +112,7 @@ export default function Admin() {
         <Tabs defaultValue="users">
           <TabsList>
             <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="sales">Vendas</TabsTrigger>
             <TabsTrigger value="webhook">URL/Webhook</TabsTrigger>
           </TabsList>
 
@@ -156,6 +163,10 @@ export default function Admin() {
             </Table>
           </TabsContent>
 
+          <TabsContent value="sales" className="mt-4 space-y-4">
+            <SalesPanel sales={sales} loading={loading} />
+          </TabsContent>
+
           <TabsContent value="webhook" className="mt-4 space-y-4">
             <div className="rounded-lg border bg-card p-4">
               <Label>URL/Webhook para plataformas de pagamento</Label>
@@ -203,5 +214,78 @@ function MetricCard({ icon: Icon, label, value }: { icon: typeof Users; label: s
       <p className="mt-3 text-2xl font-bold text-card-foreground">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
+  );
+}
+
+function extractAmount(raw: any): string {
+  if (!raw) return "-";
+  const paths = [
+    raw?.amount,
+    raw?.total,
+    raw?.value,
+    raw?.data?.amount,
+    raw?.data?.object?.amount_total,
+    raw?.data?.object?.amount,
+    raw?.transaction?.amount,
+  ];
+  for (const v of paths) {
+    if (v != null && v !== "") {
+      const num = typeof v === "number" ? v : parseFloat(String(v));
+      if (!isNaN(num)) {
+        const value = num > 1000 ? num / 100 : num;
+        return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      }
+    }
+  }
+  return "-";
+}
+
+function SalesPanel({ sales, loading }: { sales: SaleRow[]; loading: boolean }) {
+  const totalSales = sales.length;
+  const byPlan = sales.reduce<Record<string, number>>((acc, s) => {
+    const k = (s.plan ?? "—").toLowerCase();
+    acc[k] = (acc[k] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-4">
+        <MetricCard icon={ShoppingCart} label="Total de vendas" value={totalSales} />
+        <MetricCard icon={DollarSign} label="Start" value={byPlan["start"] ?? 0} />
+        <MetricCard icon={DollarSign} label="Pró" value={byPlan["pro"] ?? 0} />
+        <MetricCard icon={DollarSign} label="Premium" value={byPlan["premium"] ?? 0} />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Email do comprador</TableHead>
+              <TableHead>Plano</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Plataforma</TableHead>
+              <TableHead>Evento</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>
+            ) : sales.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma venda registrada ainda.</TableCell></TableRow>
+            ) : sales.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell className="whitespace-nowrap text-sm">{new Date(s.created_at).toLocaleString("pt-BR")}</TableCell>
+                <TableCell className="font-medium">{s.customer_email ?? "—"}</TableCell>
+                <TableCell><Badge variant="outline">{s.plan ?? "—"}</Badge></TableCell>
+                <TableCell>{extractAmount(s.raw_payload)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{s.provider}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{s.event_type ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }

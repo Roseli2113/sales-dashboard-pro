@@ -783,3 +783,67 @@ function CustomUploader({
     </div>
   );
 }
+
+// ============ CTA button editor sidebar ============
+function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Partial<CtaSettings>) => void }) {
+  return (
+    <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
+      <div className="mb-4 flex items-center gap-2">
+        <MousePointerClick className="h-4 w-4 text-primary" />
+        <h2 className="font-semibold text-foreground">Botão de Ação</h2>
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Configure um botão que aparece abaixo do vídeo em um card separado, com link, cor e tempo de exibição.
+      </p>
+      <div className="space-y-4 rounded-lg border bg-card p-3">
+        <div>
+          <Label className="text-xs">Nome do botão</Label>
+          <Input
+            value={cta.label}
+            maxLength={40}
+            placeholder="Ex: Comprar agora"
+            onChange={(e) => onChange({ label: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Link de redirecionamento</Label>
+          <Input
+            value={cta.url}
+            placeholder="https://seu-checkout.com/oferta"
+            onChange={(e) => onChange({ url: e.target.value })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Cor do botão</Label>
+          <input
+            type="color"
+            value={cta.bgColor}
+            onChange={(e) => onChange({ bgColor: e.target.value })}
+            className="h-7 w-10 cursor-pointer rounded border"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Cor do texto</Label>
+          <input
+            type="color"
+            value={cta.textColor}
+            onChange={(e) => onChange({ textColor: e.target.value })}
+            className="h-7 w-10 cursor-pointer rounded border"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Delay em segundos</Label>
+          <Input
+            type="number"
+            min={0}
+            value={cta.delaySeconds}
+            onChange={(e) => onChange({ delaySeconds: Math.max(0, Number(e.target.value) || 0) })}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            O botão aparecerá abaixo do vídeo após esse tempo de reprodução.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

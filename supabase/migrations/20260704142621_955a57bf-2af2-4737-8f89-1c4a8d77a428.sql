@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ADD COLUMN IF NOT EXISTS cta_settings jsonb NOT NULL DEFAULT '{"enabled": false, "label": "Comprar agora", "url": "", "bgColor": "#22c55e", "textColor": "#ffffff", "delaySeconds": 0}'::jsonb;

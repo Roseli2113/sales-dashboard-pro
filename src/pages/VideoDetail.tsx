@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmbedDialog } from "@/components/EmbedDialog";
+import { CtaCard, normalizeCta } from "@/components/CtaCard";
 
 const sideMenuItems = [
   { label: "Detalhes", icon: VideoIcon, active: true, link: null },
@@ -40,6 +41,16 @@ export default function VideoDetail() {
   const [embedOpen, setEmbedOpen] = useState(false);
   const videoElRef = useRef<HTMLVideoElement>(null);
   useRetentionTracking(videoElRef, video?.id);
+  const [currentTime, setCurrentTime] = useState(0);
+  const cta = normalizeCta((video as unknown as { cta_settings?: unknown } | null)?.cta_settings);
+
+  useEffect(() => {
+    const el = videoElRef.current;
+    if (!el) return;
+    const onTime = () => setCurrentTime(el.currentTime || 0);
+    el.addEventListener("timeupdate", onTime);
+    return () => el.removeEventListener("timeupdate", onTime);
+  }, [video?.id]);
 
   useEffect(() => {
     if (!id) return;
@@ -128,6 +139,11 @@ export default function VideoDetail() {
               )}
             </div>
           </div>
+          {cta.enabled && (
+            <div className={`mt-4 mx-auto ${device === "desktop" ? "w-full max-w-2xl" : "w-80"}`}>
+              <CtaCard cta={cta} videoId={video?.id} currentTimeSeconds={currentTime} />
+            </div>
+          )}
         </div>
       </div>
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

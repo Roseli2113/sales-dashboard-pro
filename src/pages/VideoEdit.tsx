@@ -32,6 +32,7 @@ import {
   Type,
   Filter,
   Volume2,
+  MousePointerClick,
   MoreVertical,
   Plus,
   Pencil,
@@ -42,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { CtaCard, defaultCta, normalizeCta, type CtaSettings } from "@/components/CtaCard";
 
 type Setting = {
   key: string;
@@ -58,6 +60,7 @@ const settings: Setting[] = [
   { key: "turbo", label: "Turbo", icon: Zap, badge: "novo", defaultOn: true },
   { key: "headlines", label: "Headlines", icon: Type, badge: "novo" },
   { key: "traffic_filter", label: "Filtro de Tráfego", icon: Filter, badge: "beta" },
+  { key: "cta", label: "Botão de Ação", icon: MousePointerClick, badge: "novo" },
 ];
 
 type Autoplay = {
@@ -111,6 +114,7 @@ export default function VideoEdit() {
     Object.fromEntries(settings.map((s) => [s.key, !!s.defaultOn])),
   );
   const [autoplays, setAutoplays] = useState<Autoplay[]>([defaultAutoplay()]);
+  const [cta, setCta] = useState<CtaSettings>(defaultCta);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -149,6 +153,7 @@ export default function VideoEdit() {
       if (data) {
         setVideo(data);
         setAutoplays(normalizeAutoplays(data.autoplay_settings));
+        setCta(normalizeCta((data as unknown as { cta_settings?: unknown }).cta_settings));
         hydratedRef.current = true;
       }
     });
@@ -160,6 +165,22 @@ export default function VideoEdit() {
     const timer = window.setTimeout(() => saveAutoplays(autoplays), 600);
     return () => window.clearTimeout(timer);
   }, [autoplays, id]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !id) return;
+    setSaveStatus("saving");
+    const timer = window.setTimeout(async () => {
+      const { error } = await (supabase as unknown as { from: (t: string) => { update: (v: unknown) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } } })
+        .from("videos").update({ cta_settings: cta }).eq("id", id);
+      if (error) {
+        setSaveStatus("idle");
+        toast({ title: "Erro ao salvar Botão", description: error.message, variant: "destructive" });
+      } else {
+        setSaveStatus("saved");
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [cta, id]);
 
   return (
     <DashboardLayout>
@@ -208,6 +229,8 @@ export default function VideoEdit() {
                 setAutoplays((l) => (l.length > 1 ? l.filter((a) => a.id !== aid) : l));
               }}
             />
+          ) : active === "cta" ? (
+            <CtaSidebar cta={cta} onChange={(patch) => setCta((c) => ({ ...c, ...patch }))} />
           ) : (
             <>
               <h2 className="mb-4 text-lg font-semibold text-foreground">Configurações de Vídeo</h2>
@@ -282,14 +305,17 @@ export default function VideoEdit() {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Ativar</span>
                 <Switch
-                  checked={toggles[active]}
-                  onCheckedChange={(v) => setToggles((t) => ({ ...t, [active]: v }))}
+                  checked={active === "cta" ? cta.enabled : toggles[active]}
+                  onCheckedChange={(v) => {
+                    if (active === "cta") setCta((c) => ({ ...c, enabled: v }));
+                    else setToggles((t) => ({ ...t, [active]: v }));
+                  }}
                 />
               </div>
             )}
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-4">
             <div className="relative w-80 aspect-[9/16] rounded-xl bg-foreground/95 flex items-center justify-center overflow-hidden">
               {video?.file_url ? (
                 <video
@@ -330,6 +356,11 @@ export default function VideoEdit() {
                 )
               )}
             </div>
+            {active === "cta" && (
+              <div className="w-80">
+                <CtaCard cta={cta} forcePreview />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -749,6 +780,70 @@ function CustomUploader({
           Remover imagem
         </Button>
       )}
+    </div>
+  );
+}
+
+// ============ CTA button editor sidebar ============
+function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Partial<CtaSettings>) => void }) {
+  return (
+    <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
+      <div className="mb-4 flex items-center gap-2">
+        <MousePointerClick className="h-4 w-4 text-primary" />
+        <h2 className="font-semibold text-foreground">Botão de Ação</h2>
+      </div>
+      <p className="mb-4 text-xs text-muted-foreground">
+        Configure um botão que aparece abaixo do vídeo em um card separado, com link, cor e tempo de exibição.
+      </p>
+      <div className="space-y-4 rounded-lg border bg-card p-3">
+        <div>
+          <Label className="text-xs">Nome do botão</Label>
+          <Input
+            value={cta.label}
+            maxLength={40}
+            placeholder="Ex: Comprar agora"
+            onChange={(e) => onChange({ label: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Link de redirecionamento</Label>
+          <Input
+            value={cta.url}
+            placeholder="https://seu-checkout.com/oferta"
+            onChange={(e) => onChange({ url: e.target.value })}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Cor do botão</Label>
+          <input
+            type="color"
+            value={cta.bgColor}
+            onChange={(e) => onChange({ bgColor: e.target.value })}
+            className="h-7 w-10 cursor-pointer rounded border"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Cor do texto</Label>
+          <input
+            type="color"
+            value={cta.textColor}
+            onChange={(e) => onChange({ textColor: e.target.value })}
+            className="h-7 w-10 cursor-pointer rounded border"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Delay em segundos</Label>
+          <Input
+            type="number"
+            min={0}
+            value={cta.delaySeconds}
+            onChange={(e) => onChange({ delaySeconds: Math.max(0, Number(e.target.value) || 0) })}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            O botão aparecerá abaixo do vídeo após esse tempo de reprodução.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

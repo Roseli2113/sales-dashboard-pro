@@ -355,6 +355,7 @@ export type Database = {
         Row: {
           autoplay_settings: Json
           created_at: string
+          cta_settings: Json
           duration_seconds: number | null
           file_url: string | null
           folder_id: string | null
@@ -371,6 +372,7 @@ export type Database = {
         Insert: {
           autoplay_settings?: Json
           created_at?: string
+          cta_settings?: Json
           duration_seconds?: number | null
           file_url?: string | null
           folder_id?: string | null
@@ -387,6 +389,7 @@ export type Database = {
         Update: {
           autoplay_settings?: Json
           created_at?: string
+          cta_settings?: Json
           duration_seconds?: number | null
           file_url?: string | null
           folder_id?: string | null

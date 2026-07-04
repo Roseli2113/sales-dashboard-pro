@@ -168,6 +168,20 @@ export default function VideoEdit() {
 
   useEffect(() => {
     if (!hydratedRef.current || !id) return;
+    // Validation: require valid URL when CTA is enabled, and integer >= 0 delay.
+    if (cta.enabled) {
+      const validUrl = (() => {
+        try {
+          const p = new URL(cta.url);
+          return p.protocol === "http:" || p.protocol === "https:";
+        } catch { return false; }
+      })();
+      if (!validUrl) { setSaveStatus("idle"); return; }
+    }
+    if (!Number.isInteger(cta.delaySeconds) || cta.delaySeconds < 0) {
+      setSaveStatus("idle");
+      return;
+    }
     setSaveStatus("saving");
     const timer = window.setTimeout(async () => {
       const { error } = await (supabase as unknown as { from: (t: string) => { update: (v: unknown) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } } })

@@ -305,14 +305,17 @@ export default function VideoEdit() {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Ativar</span>
                 <Switch
-                  checked={toggles[active]}
-                  onCheckedChange={(v) => setToggles((t) => ({ ...t, [active]: v }))}
+                  checked={active === "cta" ? cta.enabled : toggles[active]}
+                  onCheckedChange={(v) => {
+                    if (active === "cta") setCta((c) => ({ ...c, enabled: v }));
+                    else setToggles((t) => ({ ...t, [active]: v }));
+                  }}
                 />
               </div>
             )}
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-4">
             <div className="relative w-80 aspect-[9/16] rounded-xl bg-foreground/95 flex items-center justify-center overflow-hidden">
               {video?.file_url ? (
                 <video
@@ -353,6 +356,11 @@ export default function VideoEdit() {
                 )
               )}
             </div>
+            {active === "cta" && (
+              <div className="w-80">
+                <CtaCard cta={cta} forcePreview />
+              </div>
+            )}
           </div>
         </div>
       </div>

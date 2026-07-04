@@ -32,6 +32,7 @@ import {
   Type,
   Filter,
   Volume2,
+  MousePointerClick,
   MoreVertical,
   Plus,
   Pencil,
@@ -42,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
+import { CtaCard, defaultCta, normalizeCta, type CtaSettings } from "@/components/CtaCard";
 
 type Setting = {
   key: string;
@@ -58,6 +60,7 @@ const settings: Setting[] = [
   { key: "turbo", label: "Turbo", icon: Zap, badge: "novo", defaultOn: true },
   { key: "headlines", label: "Headlines", icon: Type, badge: "novo" },
   { key: "traffic_filter", label: "Filtro de Tráfego", icon: Filter, badge: "beta" },
+  { key: "cta", label: "Botão de Ação", icon: MousePointerClick, badge: "novo" },
 ];
 
 type Autoplay = {
@@ -111,6 +114,7 @@ export default function VideoEdit() {
     Object.fromEntries(settings.map((s) => [s.key, !!s.defaultOn])),
   );
   const [autoplays, setAutoplays] = useState<Autoplay[]>([defaultAutoplay()]);
+  const [cta, setCta] = useState<CtaSettings>(defaultCta);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -149,6 +153,7 @@ export default function VideoEdit() {
       if (data) {
         setVideo(data);
         setAutoplays(normalizeAutoplays(data.autoplay_settings));
+        setCta(normalizeCta((data as unknown as { cta_settings?: unknown }).cta_settings));
         hydratedRef.current = true;
       }
     });
@@ -160,6 +165,22 @@ export default function VideoEdit() {
     const timer = window.setTimeout(() => saveAutoplays(autoplays), 600);
     return () => window.clearTimeout(timer);
   }, [autoplays, id]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !id) return;
+    setSaveStatus("saving");
+    const timer = window.setTimeout(async () => {
+      const { error } = await (supabase as unknown as { from: (t: string) => { update: (v: unknown) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } } })
+        .from("videos").update({ cta_settings: cta }).eq("id", id);
+      if (error) {
+        setSaveStatus("idle");
+        toast({ title: "Erro ao salvar Botão", description: error.message, variant: "destructive" });
+      } else {
+        setSaveStatus("saved");
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [cta, id]);
 
   return (
     <DashboardLayout>

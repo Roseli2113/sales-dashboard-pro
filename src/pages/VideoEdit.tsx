@@ -786,6 +786,34 @@ function CustomUploader({
 
 // ============ CTA button editor sidebar ============
 function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Partial<CtaSettings>) => void }) {
+  const formatMMSS = (total: number) => {
+    const s = Math.max(0, Math.floor(total || 0));
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  };
+  const [delayInput, setDelayInput] = useState(formatMMSS(cta.delaySeconds));
+  useEffect(() => { setDelayInput(formatMMSS(cta.delaySeconds)); }, [cta.delaySeconds]);
+  const parseMMSS = (v: string): number | null => {
+    const t = v.trim();
+    if (!t) return 0;
+    if (/^\d+$/.test(t)) return parseInt(t, 10);
+    const m = t.match(/^(\d{1,3}):(\d{1,2})$/);
+    if (!m) return null;
+    const mm = parseInt(m[1], 10);
+    const ss = parseInt(m[2], 10);
+    if (ss > 59) return null;
+    return mm * 60 + ss;
+  };
+  const isValidUrl = (u: string) => {
+    if (!u) return false;
+    try {
+      const parsed = new URL(u);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch { return false; }
+  };
+  const urlInvalid = cta.enabled && cta.url.length > 0 && !isValidUrl(cta.url);
+  const delayInvalid = parseMMSS(delayInput) === null;
   return (
     <div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
       <div className="mb-4 flex items-center gap-2">
@@ -811,7 +839,14 @@ function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Par
             value={cta.url}
             placeholder="https://seu-checkout.com/oferta"
             onChange={(e) => onChange({ url: e.target.value })}
+            aria-invalid={urlInvalid}
+            className={urlInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
           />
+          {urlInvalid && (
+            <p className="mt-1 text-[11px] text-destructive">
+              Informe uma URL válida começando com http:// ou https://
+            </p>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <Label className="text-xs">Cor do botão</Label>
@@ -832,16 +867,32 @@ function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Par
           />
         </div>
         <div>
-          <Label className="text-xs">Delay em segundos</Label>
+          <Label className="text-xs">Delay (MM:SS)</Label>
           <Input
-            type="number"
-            min={0}
-            value={cta.delaySeconds}
-            onChange={(e) => onChange({ delaySeconds: Math.max(0, Number(e.target.value) || 0) })}
+            type="text"
+            inputMode="numeric"
+            placeholder="00:00"
+            value={delayInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDelayInput(v);
+              const parsed = parseMMSS(v);
+              if (parsed !== null && Number.isInteger(parsed) && parsed >= 0) {
+                onChange({ delaySeconds: parsed });
+              }
+            }}
+            onBlur={() => setDelayInput(formatMMSS(cta.delaySeconds))}
+            aria-invalid={delayInvalid}
+            className={delayInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
           />
           <p className="mt-1 text-[11px] text-muted-foreground">
-            O botão aparecerá abaixo do vídeo após esse tempo de reprodução.
+            Formato minutos:segundos. Ex.: 00:30 (30 segundos), 02:00 (2 minutos).
           </p>
+          {delayInvalid && (
+            <p className="mt-1 text-[11px] text-destructive">
+              Use o formato MM:SS com segundos entre 00 e 59.
+            </p>
+          )}
         </div>
       </div>
     </div>

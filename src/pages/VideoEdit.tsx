@@ -229,6 +229,8 @@ export default function VideoEdit() {
                 setAutoplays((l) => (l.length > 1 ? l.filter((a) => a.id !== aid) : l));
               }}
             />
+          ) : active === "cta" ? (
+            <CtaSidebar cta={cta} onChange={(patch) => setCta((c) => ({ ...c, ...patch }))} />
           ) : (
             <>
               <h2 className="mb-4 text-lg font-semibold text-foreground">Configurações de Vídeo</h2>

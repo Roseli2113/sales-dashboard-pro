@@ -236,7 +236,24 @@ export default function VideoEdit() {
               }}
             />
           ) : active === "cta" ? (
-            <CtaSidebar cta={cta} onChange={(patch) => setCta((c) => ({ ...c, ...patch }))} />
+            <CtaSidebar
+              cta={cta}
+              onChange={(patch) => setCta((c) => ({ ...c, ...patch }))}
+              saveStatus={saveStatus}
+              onSaveNow={async () => {
+                if (!id) return;
+                setSaveStatus("saving");
+                const { error } = await (supabase as unknown as { from: (t: string) => { update: (v: unknown) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } } })
+                  .from("videos").update({ cta_settings: cta }).eq("id", id);
+                if (error) {
+                  setSaveStatus("idle");
+                  toast({ title: "Erro ao salvar Botão", description: error.message, variant: "destructive" });
+                } else {
+                  setSaveStatus("saved");
+                  toast({ title: "Botão salvo", description: "As alterações já estão ativas no embed." });
+                }
+              }}
+            />
           ) : (
             <>
               <h2 className="mb-4 text-lg font-semibold text-foreground">Configurações de Vídeo</h2>
@@ -300,9 +317,9 @@ export default function VideoEdit() {
                     {settings.find((s) => s.key === active)?.label}
                   </Badge>
                 )}
-                {(active === "smart_autoplay" || editing) && (
+                {(active === "smart_autoplay" || editing || active === "cta") && (
                   <span className="text-xs text-primary">
-                    {saveStatus === "saving" ? "Salvando..." : saveStatus === "saved" ? "Salvo e aplicado no embed" : "Visualizando o Smart Autoplay"}
+                    {saveStatus === "saving" ? "Salvando..." : saveStatus === "saved" ? "Salvo e aplicado no embed" : "Alterações não salvas"}
                   </span>
                 )}
               </div>

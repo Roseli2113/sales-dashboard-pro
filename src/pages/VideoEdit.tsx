@@ -168,16 +168,8 @@ export default function VideoEdit() {
 
   useEffect(() => {
     if (!hydratedRef.current || !id) return;
-    // Validation: require valid URL when CTA is enabled, and integer >= 0 delay.
-    if (cta.enabled) {
-      const validUrl = (() => {
-        try {
-          const p = new URL(cta.url);
-          return p.protocol === "http:" || p.protocol === "https:";
-        } catch { return false; }
-      })();
-      if (!validUrl) { setSaveStatus("idle"); return; }
-    }
+    // Only block save on clearly invalid delay. URL is validated visually but
+    // we still persist the enabled state so the toggle survives navigation.
     if (!Number.isInteger(cta.delaySeconds) || cta.delaySeconds < 0) {
       setSaveStatus("idle");
       return;
@@ -244,7 +236,24 @@ export default function VideoEdit() {
               }}
             />
           ) : active === "cta" ? (
-            <CtaSidebar cta={cta} onChange={(patch) => setCta((c) => ({ ...c, ...patch }))} />
+            <CtaSidebar
+              cta={cta}
+              onChange={(patch) => setCta((c) => ({ ...c, ...patch }))}
+              saveStatus={saveStatus}
+              onSaveNow={async () => {
+                if (!id) return;
+                setSaveStatus("saving");
+                const { error } = await (supabase as unknown as { from: (t: string) => { update: (v: unknown) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } } })
+                  .from("videos").update({ cta_settings: cta }).eq("id", id);
+                if (error) {
+                  setSaveStatus("idle");
+                  toast({ title: "Erro ao salvar Botão", description: error.message, variant: "destructive" });
+                } else {
+                  setSaveStatus("saved");
+                  toast({ title: "Botão salvo", description: "As alterações já estão ativas no embed." });
+                }
+              }}
+            />
           ) : (
             <>
               <h2 className="mb-4 text-lg font-semibold text-foreground">Configurações de Vídeo</h2>
@@ -308,9 +317,9 @@ export default function VideoEdit() {
                     {settings.find((s) => s.key === active)?.label}
                   </Badge>
                 )}
-                {(active === "smart_autoplay" || editing) && (
+                {(active === "smart_autoplay" || editing || active === "cta") && (
                   <span className="text-xs text-primary">
-                    {saveStatus === "saving" ? "Salvando..." : saveStatus === "saved" ? "Salvo e aplicado no embed" : "Visualizando o Smart Autoplay"}
+                    {saveStatus === "saving" ? "Salvando..." : saveStatus === "saved" ? "Salvo e aplicado no embed" : "Alterações não salvas"}
                   </span>
                 )}
               </div>
@@ -799,7 +808,17 @@ function CustomUploader({
 }
 
 // ============ CTA button editor sidebar ============
-function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Partial<CtaSettings>) => void }) {
+function CtaSidebar({
+  cta,
+  onChange,
+  saveStatus,
+  onSaveNow,
+}: {
+  cta: CtaSettings;
+  onChange: (patch: Partial<CtaSettings>) => void;
+  saveStatus: "idle" | "saving" | "saved";
+  onSaveNow: () => void | Promise<void>;
+}) {
   const formatMMSS = (total: number) => {
     const s = Math.max(0, Math.floor(total || 0));
     const m = Math.floor(s / 60);
@@ -908,6 +927,22 @@ function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Par
             </p>
           )}
         </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {saveStatus === "saving"
+            ? "Salvando..."
+            : saveStatus === "saved"
+              ? "Salvo e aplicado no embed"
+              : "Alterações não salvas"}
+        </span>
+        <Button
+          size="sm"
+          onClick={() => onSaveNow()}
+          disabled={delayInvalid || urlInvalid || saveStatus === "saving"}
+        >
+          Salvar botão
+        </Button>
       </div>
     </div>
   );

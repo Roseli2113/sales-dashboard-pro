@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: video, error } = await supabase
       .from("videos")
-      .select("id, file_url, name, autoplay_settings")
+      .select("id, file_url, name, autoplay_settings, cta_settings")
       .eq("id", videoId)
       .maybeSingle();
 
@@ -55,10 +55,20 @@ Deno.serve(async (req) => {
       bottomText: "Clique para ouvir",
       ...(autoplayList[0] ?? {}),
     };
+    const ctaDefaults = {
+      enabled: false,
+      label: "Comprar agora",
+      url: "",
+      bgColor: "#22c55e",
+      textColor: "#ffffff",
+      delaySeconds: 0,
+    };
+    const cta = { ...ctaDefaults, ...((video.cta_settings as Record<string, unknown> | null) ?? {}) };
     const initialConfig = {
       [video.id]: {
         url: video.file_url,
         autoplay,
+        cta,
       },
     };
 

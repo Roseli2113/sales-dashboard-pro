@@ -168,16 +168,8 @@ export default function VideoEdit() {
 
   useEffect(() => {
     if (!hydratedRef.current || !id) return;
-    // Validation: require valid URL when CTA is enabled, and integer >= 0 delay.
-    if (cta.enabled) {
-      const validUrl = (() => {
-        try {
-          const p = new URL(cta.url);
-          return p.protocol === "http:" || p.protocol === "https:";
-        } catch { return false; }
-      })();
-      if (!validUrl) { setSaveStatus("idle"); return; }
-    }
+    // Only block save on clearly invalid delay. URL is validated visually but
+    // we still persist the enabled state so the toggle survives navigation.
     if (!Number.isInteger(cta.delaySeconds) || cta.delaySeconds < 0) {
       setSaveStatus("idle");
       return;

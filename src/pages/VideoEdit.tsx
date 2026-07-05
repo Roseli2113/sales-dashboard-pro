@@ -808,7 +808,17 @@ function CustomUploader({
 }
 
 // ============ CTA button editor sidebar ============
-function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Partial<CtaSettings>) => void }) {
+function CtaSidebar({
+  cta,
+  onChange,
+  saveStatus,
+  onSaveNow,
+}: {
+  cta: CtaSettings;
+  onChange: (patch: Partial<CtaSettings>) => void;
+  saveStatus: "idle" | "saving" | "saved";
+  onSaveNow: () => void | Promise<void>;
+}) {
   const formatMMSS = (total: number) => {
     const s = Math.max(0, Math.floor(total || 0));
     const m = Math.floor(s / 60);
@@ -917,6 +927,22 @@ function CtaSidebar({ cta, onChange }: { cta: CtaSettings; onChange: (patch: Par
             </p>
           )}
         </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {saveStatus === "saving"
+            ? "Salvando..."
+            : saveStatus === "saved"
+              ? "Salvo e aplicado no embed"
+              : "Alterações não salvas"}
+        </span>
+        <Button
+          size="sm"
+          onClick={() => onSaveNow()}
+          disabled={delayInvalid || urlInvalid || saveStatus === "saving"}
+        >
+          Salvar botão
+        </Button>
       </div>
     </div>
   );

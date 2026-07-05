@@ -282,8 +282,7 @@ Deno.serve(async (req) => {
         }
         var ctaBtn = document.createElement("a");
         ctaBtn.href = CTA.url;
-        ctaBtn.target = "_blank";
-        ctaBtn.rel = "noopener noreferrer";
+        ctaBtn.target = "_self";
         ctaBtn.textContent = CTA.label || "Ação";
         ctaBtn.style.cssText = "display:block!important;width:100%!important;padding:14px 20px!important;border-radius:8px!important;font-size:16px!important;font-weight:700!important;text-decoration:none!important;text-align:center!important;box-sizing:border-box!important;background:" + (CTA.bgColor || "#22c55e") + "!important;color:" + (CTA.textColor || "#ffffff") + "!important;transition:transform .15s ease!important;";
         ctaBtn.addEventListener("mouseenter", function(){ ctaBtn.style.setProperty("transform","scale(1.02)","important"); });

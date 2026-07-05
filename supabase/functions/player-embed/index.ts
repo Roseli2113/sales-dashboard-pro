@@ -130,10 +130,10 @@ Deno.serve(async (req) => {
           host.innerHTML = '<div style="padding:12px;color:#fff;background:#000;font-family:system-ui;">VPlay: vídeo não encontrado</div>';
           return;
         }
-        self._render(videoId, cfg.url, cfg.autoplay || {});
+        self._render(videoId, cfg.url, cfg.autoplay || {}, cfg.cta || {});
       });
     }
-    _render(VIDEO_ID, VIDEO_URL, AUTOPLAY) {
+    _render(VIDEO_ID, VIDEO_URL, AUTOPLAY, CTA) {
       // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
       var host = this;
       var responsive = host.getAttribute("data-responsive") === "true";

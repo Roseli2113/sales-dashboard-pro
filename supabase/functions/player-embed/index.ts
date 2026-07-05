@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)
     if (url.pathname.endsWith(".json")) {
-      return new Response(JSON.stringify({ url: video.file_url, autoplay }), {
+      return new Response(JSON.stringify({ url: video.file_url, autoplay, cta }), {
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json; charset=utf-8",

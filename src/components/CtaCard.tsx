@@ -68,7 +68,7 @@ export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, tr
 
   return (
     <div className={`rounded-xl border bg-card p-4 shadow-sm ${className ?? ""}`}>
-      {forcePreview && cta.delaySeconds > 0 && (
+      {cta.delaySeconds > 0 && (
         <p className="mb-2 text-center text-xs text-muted-foreground">
           Após {formatDelay(cta.delaySeconds)}
         </p>

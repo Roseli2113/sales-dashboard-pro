@@ -21,9 +21,37 @@
   <meta name="twitter:title" content="Lovable App">
   <meta property="og:description" content="Sales Dashboard Pro is a SaaS platform for creating and managing video sales pages and analytics.">
   <meta name="twitter:description" content="Sales Dashboard Pro is a SaaS platform for creating and managing video sales pages and analytics.">
+
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1853079591997416');
+    fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel Code -->
+
+    <!-- Gerencia ROI UTM script -->
+    <script
+      src="https://zwylxoajyyjflvvcwpvz.supabase.co/functions/v1/utms/latest.js"
+      data-gerenciaroi-prevent-xcod-sck
+      data-gerenciaroi-prevent-subids
+      async
+      defer
+    ></script>
 </head>
 
   <body>
+    <!-- Meta Pixel noscript fallback -->
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1853079591997416&ev=PageView&noscript=1"
+    /></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

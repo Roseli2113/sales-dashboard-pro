@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: video, error } = await supabase
       .from("videos")
-      .select("id, file_url, name, autoplay_settings")
+      .select("id, file_url, name, autoplay_settings, cta_settings")
       .eq("id", videoId)
       .maybeSingle();
 
@@ -55,10 +55,20 @@ Deno.serve(async (req) => {
       bottomText: "Clique para ouvir",
       ...(autoplayList[0] ?? {}),
     };
+    const ctaDefaults = {
+      enabled: false,
+      label: "Comprar agora",
+      url: "",
+      bgColor: "#22c55e",
+      textColor: "#ffffff",
+      delaySeconds: 0,
+    };
+    const cta = { ...ctaDefaults, ...((video.cta_settings as Record<string, unknown> | null) ?? {}) };
     const initialConfig = {
       [video.id]: {
         url: video.file_url,
         autoplay,
+        cta,
       },
     };
 
@@ -120,10 +130,10 @@ Deno.serve(async (req) => {
           host.innerHTML = '<div style="padding:12px;color:#fff;background:#000;font-family:system-ui;">VPlay: vídeo não encontrado</div>';
           return;
         }
-        self._render(videoId, cfg.url, cfg.autoplay || {});
+        self._render(videoId, cfg.url, cfg.autoplay || {}, cfg.cta || {});
       });
     }
-    _render(VIDEO_ID, VIDEO_URL, AUTOPLAY) {
+    _render(VIDEO_ID, VIDEO_URL, AUTOPLAY, CTA) {
       // Ensure host element is block-level and visible (WordPress/Elementor may strip styles)
       var host = this;
       var responsive = host.getAttribute("data-responsive") === "true";
@@ -257,6 +267,43 @@ Deno.serve(async (req) => {
       host.innerHTML = "";
       host.appendChild(wrap);
 
+      // CTA button below the video
+      if (CTA && CTA.enabled && CTA.url) {
+        var ctaWrap = document.createElement("div");
+        ctaWrap.style.cssText = "display:block!important;width:100%!important;max-width:100%!important;margin:12px 0 0 0!important;padding:16px!important;box-sizing:border-box!important;background:#ffffff!important;border:1px solid rgba(0,0,0,0.08)!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)!important;text-align:center!important;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif!important;";
+        var delaySec = Math.max(0, parseInt(CTA.delaySeconds, 10) || 0);
+        function fmtDelay(s){var m=Math.floor(s/60).toString().padStart(2,"0");var r=(s%60).toString().padStart(2,"0");return m+":"+r;}
+        var ctaHint = null;
+        if (delaySec > 0) {
+          ctaHint = document.createElement("p");
+          ctaHint.textContent = "Após " + fmtDelay(delaySec);
+          ctaHint.style.cssText = "margin:0 0 8px 0!important;font-size:12px!important;color:#6b7280!important;";
+          ctaWrap.appendChild(ctaHint);
+        }
+        var ctaBtn = document.createElement("a");
+        ctaBtn.href = CTA.url;
+        ctaBtn.target = "_blank";
+        ctaBtn.rel = "noopener noreferrer";
+        ctaBtn.textContent = CTA.label || "Ação";
+        ctaBtn.style.cssText = "display:block!important;width:100%!important;padding:14px 20px!important;border-radius:8px!important;font-size:16px!important;font-weight:700!important;text-decoration:none!important;text-align:center!important;box-sizing:border-box!important;background:" + (CTA.bgColor || "#22c55e") + "!important;color:" + (CTA.textColor || "#ffffff") + "!important;transition:transform .15s ease!important;";
+        ctaBtn.addEventListener("mouseenter", function(){ ctaBtn.style.setProperty("transform","scale(1.02)","important"); });
+        ctaBtn.addEventListener("mouseleave", function(){ ctaBtn.style.setProperty("transform","none","important"); });
+        ctaWrap.appendChild(ctaBtn);
+
+        if (delaySec > 0) {
+          ctaWrap.style.setProperty("display", "none", "important");
+          var revealed = false;
+          video.addEventListener("timeupdate", function(){
+            if (revealed) return;
+            if (video.currentTime >= delaySec) {
+              revealed = true;
+              ctaWrap.style.setProperty("display", "block", "important");
+            }
+          });
+        }
+        host.appendChild(ctaWrap);
+      }
+
       // Try autoplay (muted is required by browsers)
       var ap = video.play();
       if (ap && ap.catch) ap.catch(function(){});
@@ -355,7 +402,7 @@ Deno.serve(async (req) => {
 
     // If the request was for the JSON config (used by already-loaded script to fetch sibling videos)
     if (url.pathname.endsWith(".json")) {
-      return new Response(JSON.stringify({ url: video.file_url, autoplay }), {
+      return new Response(JSON.stringify({ url: video.file_url, autoplay, cta }), {
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json; charset=utf-8",

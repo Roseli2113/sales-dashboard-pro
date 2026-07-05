@@ -75,8 +75,6 @@ export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, tr
       )}
       <a
         href={cta.url || "#"}
-        target="_blank"
-        rel="noopener noreferrer"
         onClick={handleClick}
         className="block w-full rounded-md px-6 py-3 text-center text-base font-semibold transition-transform hover:scale-[1.02]"
         style={{ backgroundColor: cta.bgColor, color: cta.textColor }}

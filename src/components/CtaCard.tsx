@@ -33,6 +33,13 @@ type Props = {
   className?: string;
 };
 
+function formatDelay(sec: number) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const r = (s % 60).toString().padStart(2, "0");
+  return `${m}:${r}`;
+}
+
 export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, trackClick, className }: Props) {
   const [visible, setVisible] = useState(forcePreview ? true : cta.delaySeconds <= 0);
 
@@ -61,6 +68,11 @@ export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, tr
 
   return (
     <div className={`rounded-xl border bg-card p-4 shadow-sm ${className ?? ""}`}>
+      {forcePreview && cta.delaySeconds > 0 && (
+        <p className="mb-2 text-center text-xs text-muted-foreground">
+          Após {formatDelay(cta.delaySeconds)}
+        </p>
+      )}
       <a
         href={cta.url || "#"}
         target="_blank"

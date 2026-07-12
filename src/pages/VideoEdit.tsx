@@ -264,7 +264,7 @@ export default function VideoEdit() {
               </Button>
               <nav className="space-y-1 rounded-lg border bg-card p-2">
                 {settings.map((s) => {
-                  const isOn = toggles[s.key];
+                  const isOn = s.key === "cta" ? cta.enabled : toggles[s.key];
                   return (
                     <button
                       key={s.key}

@@ -40,7 +40,7 @@ export default function Embed() {
           <video ref={ref} src={url} controls playsInline style={{ width: "100%", maxHeight: cta?.enabled ? "80vh" : "100vh", objectFit: "contain", background: "#000" }} />
           {cta && (
             <div style={{ width: "100%", maxWidth: 720, padding: "0 16px 16px" }}>
-              <CtaCard cta={cta} videoId={id} currentTimeSeconds={currentTime} trackClick />
+              <CtaCard cta={cta} videoId={id} currentTimeSeconds={currentTime} trackClick showDelayHint={false} />
             </div>
           )}
         </>

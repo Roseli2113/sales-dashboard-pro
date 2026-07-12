@@ -224,6 +224,8 @@ Deno.serve(async (req) => {
         video.muted = false;
         video.volume = 1;
         maxTime = 0;
+        ctaPlayedSeconds = 0;
+        ctaLastTick = null;
         var p = video.play();
         if (p && p.catch) p.catch(function(){});
         unmuteOverlay.style.opacity = "0";
@@ -268,18 +270,12 @@ Deno.serve(async (req) => {
       host.appendChild(wrap);
 
       // CTA button below the video
+      var ctaPlayedSeconds = 0;
+      var ctaLastTick = null;
       if (CTA && CTA.enabled && CTA.url) {
         var ctaWrap = document.createElement("div");
         ctaWrap.style.cssText = "display:block!important;width:100%!important;max-width:100%!important;margin:12px 0 0 0!important;padding:16px!important;box-sizing:border-box!important;background:#ffffff!important;border:1px solid rgba(0,0,0,0.08)!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)!important;text-align:center!important;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif!important;";
         var delaySec = Math.max(0, parseInt(CTA.delaySeconds, 10) || 0);
-        function fmtDelay(s){var m=Math.floor(s/60).toString().padStart(2,"0");var r=(s%60).toString().padStart(2,"0");return m+":"+r;}
-        var ctaHint = null;
-        if (delaySec > 0) {
-          ctaHint = document.createElement("p");
-          ctaHint.textContent = "Após " + fmtDelay(delaySec);
-          ctaHint.style.cssText = "margin:0 0 8px 0!important;font-size:12px!important;color:#6b7280!important;";
-          ctaWrap.appendChild(ctaHint);
-        }
         var ctaBtn = document.createElement("a");
         ctaBtn.href = CTA.url;
         ctaBtn.target = "_self";
@@ -292,13 +288,21 @@ Deno.serve(async (req) => {
         if (delaySec > 0) {
           ctaWrap.style.setProperty("display", "none", "important");
           var revealed = false;
-          video.addEventListener("timeupdate", function(){
+          // Count only actual playback time (paused/muted preview does NOT count)
+          setInterval(function(){
             if (revealed) return;
-            if (video.currentTime >= delaySec) {
+            if (!video.paused && !video.muted) {
+              var now = (performance && performance.now) ? performance.now() : Date.now();
+              if (ctaLastTick != null) ctaPlayedSeconds += (now - ctaLastTick) / 1000;
+              ctaLastTick = now;
+            } else {
+              ctaLastTick = null;
+            }
+            if (ctaPlayedSeconds >= delaySec) {
               revealed = true;
               ctaWrap.style.setProperty("display", "block", "important");
             }
-          });
+          }, 250);
         }
         host.appendChild(ctaWrap);
       }

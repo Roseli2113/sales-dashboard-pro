@@ -31,6 +31,7 @@ type Props = {
   forcePreview?: boolean;
   trackClick?: boolean;
   className?: string;
+  showDelayHint?: boolean;
 };
 
 function formatDelay(sec: number) {
@@ -40,7 +41,7 @@ function formatDelay(sec: number) {
   return `${m}:${r}`;
 }
 
-export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, trackClick, className }: Props) {
+export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, trackClick, className, showDelayHint = true }: Props) {
   const [visible, setVisible] = useState(forcePreview ? true : cta.delaySeconds <= 0);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function CtaCard({ cta, videoId, currentTimeSeconds = 0, forcePreview, tr
 
   return (
     <div className={`rounded-xl border bg-card p-4 shadow-sm ${className ?? ""}`}>
-      {cta.delaySeconds > 0 && (
+      {showDelayHint && cta.delaySeconds > 0 && (
         <p className="mb-2 text-center text-xs text-muted-foreground">
           Após {formatDelay(cta.delaySeconds)}
         </p>

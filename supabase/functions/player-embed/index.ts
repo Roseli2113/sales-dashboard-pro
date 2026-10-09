@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     // Path looks like /player-embed/<id>.js  (or /functions/v1/player-embed/<id>.js)
-    const match = url.pathname.match(/([0-9a-fA-F-]{36})(?:\.js)?$/);
+    const match = url.pathname.match(/([0-9a-fA-F-]{36})(?:\.js|\.json)?$/);
     const videoId = match?.[1];
 
     if (!videoId) {

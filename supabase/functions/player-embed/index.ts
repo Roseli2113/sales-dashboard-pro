@@ -186,6 +186,54 @@ Deno.serve(async (req) => {
 
       wrap.appendChild(video);
 
+      // Loading overlay: circular progress ring with live percentage while the video buffers
+      var loaderHidden = false;
+      var CIRC = 2 * Math.PI * 28;
+      var loaderOverlay = document.createElement("div");
+      loaderOverlay.style.cssText = "position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:4;transition:opacity .3s;pointer-events:none;";
+      loaderOverlay.innerHTML =
+        '<style>@keyframes vplaySpin{to{transform:rotate(360deg)}}</style>' +
+        '<div class="vplay-loader-inner" style="position:relative;width:64px;height:64px;">' +
+        '<svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);display:block;">' +
+        '<circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.18)" stroke-width="5" fill="none"/>' +
+        '<circle class="vplay-ring" cx="32" cy="32" r="28" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"/>' +
+        '</svg>' +
+        '<div class="vplay-pct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;font-weight:700;">0%</div>' +
+        '</div>';
+      wrap.appendChild(loaderOverlay);
+
+      function updateLoader() {
+        if (loaderHidden) return;
+        var dur = video.duration;
+        var end = 0;
+        if (video.buffered && video.buffered.length) {
+          for (var i = 0; i < video.buffered.length; i++) {
+            if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) { end = video.buffered.end(i); break; }
+            end = video.buffered.end(i);
+          }
+        }
+        var pct = (dur && isFinite(dur) && dur > 0) ? Math.min(100, Math.round((end / dur) * 100)) : 0;
+        var ring = loaderOverlay.querySelector(".vplay-ring");
+        var pctEl = loaderOverlay.querySelector(".vplay-pct");
+        var inner = loaderOverlay.querySelector(".vplay-loader-inner");
+        if (ring) ring.style.strokeDashoffset = String(CIRC * (1 - pct / 100));
+        if (pctEl) pctEl.textContent = pct + "%";
+        // Indeterminate spin while the duration is still unknown
+        if (inner) inner.style.animation = (!dur || !isFinite(dur)) ? "vplaySpin 1s linear infinite" : "";
+      }
+      function hideLoader() {
+        if (loaderHidden) return;
+        loaderHidden = true;
+        loaderOverlay.style.opacity = "0";
+        setTimeout(function(){ loaderOverlay.style.display = "none"; }, 300);
+      }
+      video.addEventListener("progress", updateLoader);
+      video.addEventListener("loadedmetadata", updateLoader);
+      video.addEventListener("canplay", function(){ setTimeout(hideLoader, 250); });
+      video.addEventListener("playing", hideLoader);
+      video.addEventListener("error", hideLoader);
+
+
       function applyAspect() {
         if (explicitAspect) {
           video.style.setProperty("aspect-ratio", explicitAspect === "16:9" ? "16 / 9" : "9 / 16", "important");

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRetentionTracking } from "@/lib/retention";
 import { useVideoEventTracking } from "@/lib/tracking";
 import { CtaCard, normalizeCta, type CtaSettings } from "@/components/CtaCard";
+import { getVideoLoadingProgress } from "../../supabase/functions/_shared/video-loading";
 
 export default function Embed() {
   const { id } = useParams();
@@ -31,39 +32,57 @@ export default function Embed() {
   useEffect(() => {
     const el = ref.current;
     if (!el || !url) return;
+    const startedAt = performance.now();
+    let readyTimer: ReturnType<typeof setTimeout> | undefined;
+    let finished = false;
+    setVideoReady(false);
+    setLoadPct(1);
     const onTime = () => setCurrentTime(el.currentTime || 0);
     el.addEventListener("timeupdate", onTime);
     const onProgress = () => {
-      const dur = el.duration;
+      if (finished) return;
       let end = 0;
       if (el.buffered.length) {
         for (let i = 0; i < el.buffered.length; i++) {
           if (el.buffered.start(i) <= el.currentTime && el.currentTime <= el.buffered.end(i)) { end = el.buffered.end(i); break; }
-          end = el.buffered.end(i);
         }
       }
-      const pct = dur && isFinite(dur) && dur > 0 ? Math.min(100, Math.round((end / dur) * 100)) : 0;
-      setLoadPct(pct);
+      const target = Number.isFinite(el.duration) && el.duration > 0 ? Math.min(3, el.duration) : 3;
+      const pct = getVideoLoadingProgress(performance.now() - startedAt, el.readyState, Math.max(0, end - el.currentTime), target);
+      setLoadPct(previous => Math.max(previous, pct));
+      if (el.readyState >= 3) onReady();
     };
-    const onReady = () => setVideoReady(true);
+    const onReady = () => {
+      if (finished) return;
+      finished = true;
+      clearInterval(progressTimer);
+      setLoadPct(100);
+      readyTimer = setTimeout(() => setVideoReady(true), 200);
+    };
+    const onError = () => {
+      finished = true;
+      clearInterval(progressTimer);
+      setVideoReady(true);
+    };
+    const progressTimer = setInterval(onProgress, 200);
     el.addEventListener("progress", onProgress);
     el.addEventListener("loadedmetadata", onProgress);
+    el.addEventListener("loadeddata", onProgress);
     el.addEventListener("canplay", onReady);
     el.addEventListener("playing", onReady);
+    el.addEventListener("error", onError);
+    onProgress();
     return () => {
+      clearInterval(progressTimer);
+      clearTimeout(readyTimer);
       el.removeEventListener("timeupdate", onTime);
       el.removeEventListener("progress", onProgress);
       el.removeEventListener("loadedmetadata", onProgress);
+      el.removeEventListener("loadeddata", onProgress);
       el.removeEventListener("canplay", onReady);
       el.removeEventListener("playing", onReady);
+      el.removeEventListener("error", onError);
     };
-  }, [url]);
-
-
-
-  useEffect(() => {
-    setVideoReady(false);
-    setLoadPct(0);
   }, [url]);
 
   const ringCirc = 2 * Math.PI * 28;
@@ -73,7 +92,7 @@ export default function Embed() {
       {url ? (
         <>
           <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
-            <video ref={ref} src={url} controls playsInline style={{ width: "100%", maxHeight: cta?.enabled ? "80vh" : "100vh", objectFit: "contain", background: "#000" }} />
+            <video ref={ref} src={url} preload="auto" controls playsInline style={{ width: "100%", maxHeight: cta?.enabled ? "80vh" : "100vh", objectFit: "contain", background: "#000" }} />
             {!videoReady && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#000", zIndex: 4 }}>
                 <div style={{ position: "relative", width: 64, height: 64 }}>

@@ -1,6 +1,7 @@
 // Public edge function that serves a JS file defining the <vplay-smartplayer> custom element
 // for a specific video. Called via: /functions/v1/player-embed/<video_id>.js
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getVideoLoadingProgress } from "../_shared/video-loading.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,7 @@ Deno.serve(async (req) => {
     };
 
     const js = `(function(){
+  var getVideoLoadingProgress = ${getVideoLoadingProgress.toString()};
   // Prevent the whole IIFE from running twice when WordPress/Elementor injects the script
   // multiple times (would otherwise throw NotSupportedError on customElements.define)
   if (window.__VPLAY_SMARTPLAYER_CLASS__) {
@@ -188,6 +190,8 @@ Deno.serve(async (req) => {
 
       // Loading overlay: circular progress ring with live percentage while the video buffers
       var loaderHidden = false;
+      var loaderStarted = performance.now();
+      var loaderPct = 1;
       var CIRC = 2 * Math.PI * 28;
       var loaderOverlay = document.createElement("div");
       loaderOverlay.style.cssText = "position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:4;transition:opacity .3s;pointer-events:none;";
@@ -198,7 +202,7 @@ Deno.serve(async (req) => {
         '<circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.18)" stroke-width="5" fill="none"/>' +
         '<circle class="vplay-ring" cx="32" cy="32" r="28" stroke="#ef4444" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"/>' +
         '</svg>' +
-        '<div class="vplay-pct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;font-weight:700;">0%</div>' +
+        '<div class="vplay-pct" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;font-weight:700;">1%</div>' +
         '</div>';
       wrap.appendChild(loaderOverlay);
 
@@ -209,29 +213,44 @@ Deno.serve(async (req) => {
         if (video.buffered && video.buffered.length) {
           for (var i = 0; i < video.buffered.length; i++) {
             if (video.buffered.start(i) <= video.currentTime && video.currentTime <= video.buffered.end(i)) { end = video.buffered.end(i); break; }
-            end = video.buffered.end(i);
           }
         }
-        var pct = (dur && isFinite(dur) && dur > 0) ? Math.min(100, Math.round((end / dur) * 100)) : 0;
+        var target = isFinite(dur) && dur > 0 ? Math.min(3, dur) : 3;
+        loaderPct = Math.max(loaderPct, getVideoLoadingProgress(performance.now() - loaderStarted, video.readyState, Math.max(0, end - video.currentTime), target));
+        var pct = loaderPct;
         var ring = loaderOverlay.querySelector(".vplay-ring");
         var pctEl = loaderOverlay.querySelector(".vplay-pct");
         var inner = loaderOverlay.querySelector(".vplay-loader-inner");
         if (ring) ring.style.strokeDashoffset = String(CIRC * (1 - pct / 100));
         if (pctEl) pctEl.textContent = pct + "%";
         // Indeterminate spin while the duration is still unknown
-        if (inner) inner.style.animation = (!dur || !isFinite(dur)) ? "vplaySpin 1s linear infinite" : "";
+        if (inner) inner.style.animation = "";
+        if (video.readyState >= 3) hideLoader();
       }
       function hideLoader() {
         if (loaderHidden) return;
         loaderHidden = true;
-        loaderOverlay.style.opacity = "0";
-        setTimeout(function(){ loaderOverlay.style.display = "none"; }, 300);
+        clearInterval(loaderTimer);
+        var pctEl = loaderOverlay.querySelector(".vplay-pct");
+        var ring = loaderOverlay.querySelector(".vplay-ring");
+        if (!video.error) {
+          if (pctEl) pctEl.textContent = "100%";
+          if (ring) ring.style.strokeDashoffset = "0";
+        }
+        setTimeout(function(){ loaderOverlay.style.opacity = "0"; }, 200);
+        setTimeout(function(){ loaderOverlay.style.display = "none"; }, 500);
       }
+      var loaderTimer = setInterval(function(){
+        if (!host.isConnected) { clearInterval(loaderTimer); return; }
+        updateLoader();
+      }, 200);
       video.addEventListener("progress", updateLoader);
       video.addEventListener("loadedmetadata", updateLoader);
-      video.addEventListener("canplay", function(){ setTimeout(hideLoader, 250); });
+      video.addEventListener("loadeddata", updateLoader);
+      video.addEventListener("canplay", hideLoader);
       video.addEventListener("playing", hideLoader);
       video.addEventListener("error", hideLoader);
+      updateLoader();
 
 
       function applyAspect() {

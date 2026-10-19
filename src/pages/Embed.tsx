@@ -30,11 +30,32 @@ export default function Embed() {
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const onTime = () => setCurrentTime(el.currentTime || 0);
-    el.addEventListener("timeupdate", onTime);
-    return () => el.removeEventListener("timeupdate", onTime);
+    if (!el || !url) return;
+    const onProgress = () => {
+      const dur = el.duration;
+      let end = 0;
+      if (el.buffered.length) {
+        for (let i = 0; i < el.buffered.length; i++) {
+          if (el.buffered.start(i) <= el.currentTime && el.currentTime <= el.buffered.end(i)) { end = el.buffered.end(i); break; }
+          end = el.buffered.end(i);
+        }
+      }
+      const pct = dur && isFinite(dur) && dur > 0 ? Math.min(100, Math.round((end / dur) * 100)) : 0;
+      setLoadPct(pct);
+    };
+    const onReady = () => setVideoReady(true);
+    el.addEventListener("progress", onProgress);
+    el.addEventListener("loadedmetadata", onProgress);
+    el.addEventListener("canplay", onReady);
+    el.addEventListener("playing", onReady);
+    return () => {
+      el.removeEventListener("progress", onProgress);
+      el.removeEventListener("loadedmetadata", onProgress);
+      el.removeEventListener("canplay", onReady);
+      el.removeEventListener("playing", onReady);
+    };
   }, [url]);
+
 
   return (
     <div style={{ margin: 0, padding: 0, background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>

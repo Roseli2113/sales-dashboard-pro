@@ -61,11 +61,32 @@ export default function Embed() {
 
 
 
+  useEffect(() => {
+    setVideoReady(false);
+    setLoadPct(0);
+  }, [url]);
+
+  const ringCirc = 2 * Math.PI * 28;
+
   return (
     <div style={{ margin: 0, padding: 0, background: "#000", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
       {url ? (
         <>
-          <video ref={ref} src={url} controls playsInline style={{ width: "100%", maxHeight: cta?.enabled ? "80vh" : "100vh", objectFit: "contain", background: "#000" }} />
+          <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
+            <video ref={ref} src={url} controls playsInline style={{ width: "100%", maxHeight: cta?.enabled ? "80vh" : "100vh", objectFit: "contain", background: "#000" }} />
+            {!videoReady && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#000", zIndex: 4 }}>
+                <div style={{ position: "relative", width: 64, height: 64 }}>
+                  <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: "rotate(-90deg)", display: "block" }}>
+                    <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.18)" strokeWidth="5" fill="none" />
+                    <circle cx="32" cy="32" r="28" stroke="#ef4444" strokeWidth="5" fill="none" strokeLinecap="round" strokeDasharray={ringCirc} strokeDashoffset={ringCirc * (1 - loadPct / 100)} />
+                  </svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "system-ui, sans-serif", fontSize: 13, fontWeight: 700 }}>{loadPct}%</div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {cta && (
             <div style={{ width: "100%", maxWidth: 720, padding: "0 16px 16px" }}>
               <CtaCard cta={cta} videoId={id} currentTimeSeconds={currentTime} trackClick showDelayHint={false} />

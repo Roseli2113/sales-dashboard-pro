@@ -11,7 +11,10 @@ export default function Embed() {
   const [notFound, setNotFound] = useState(false);
   const [cta, setCta] = useState<CtaSettings | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [loadPct, setLoadPct] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
+
   useRetentionTracking(ref, id);
   useVideoEventTracking(ref, id);
 

@@ -31,6 +31,8 @@ export default function Embed() {
   useEffect(() => {
     const el = ref.current;
     if (!el || !url) return;
+    const onTime = () => setCurrentTime(el.currentTime || 0);
+    el.addEventListener("timeupdate", onTime);
     const onProgress = () => {
       const dur = el.duration;
       let end = 0;
@@ -49,12 +51,14 @@ export default function Embed() {
     el.addEventListener("canplay", onReady);
     el.addEventListener("playing", onReady);
     return () => {
+      el.removeEventListener("timeupdate", onTime);
       el.removeEventListener("progress", onProgress);
       el.removeEventListener("loadedmetadata", onProgress);
       el.removeEventListener("canplay", onReady);
       el.removeEventListener("playing", onReady);
     };
   }, [url]);
+
 
 
   return (
